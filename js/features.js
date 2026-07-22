@@ -99,7 +99,7 @@ const EventifyFeatures = {
 
   async trackView(eventId) {
     try {
-      await sb.rpc('increment_event_views', { p_event_id: eventId });
+      await sb.rpc('increment_event_views', { p_event_id: Number(eventId) });
     } catch {
       /* SQL optional */
     }
@@ -108,7 +108,7 @@ const EventifyFeatures = {
   async joinWaitlist(eventId, { name, email, userId }) {
     try {
       const { error } = await sb.from('waitlist').insert({
-        event_id: eventId,
+        event_id: Number(eventId),
         user_id: userId || null,
         name,
         email: email || '',
@@ -130,7 +130,7 @@ const EventifyFeatures = {
   async reportEvent(eventId, { reason, details, reporterId }) {
     try {
       const { error } = await sb.from('event_reports').insert({
-        event_id: eventId,
+        event_id: Number(eventId),
         reporter_id: reporterId || null,
         reason,
         details: details || '',
