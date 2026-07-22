@@ -19,8 +19,18 @@
   function normalizePage(name) {
     name = (name || '').split('?')[0].split('#')[0];
     if (!name || name === '/' || name === '') return 'index.html';
+    // Vercel cleanUrls may serve /login instead of /login.html
     if (name.indexOf('.') === -1) name += '.html';
     return name;
+  }
+
+  function isAuthFormPage(page) {
+    return (
+      page === 'login.html' ||
+      page === 'register.html' ||
+      page === 'forgot-password.html' ||
+      page === 'reset-password.html'
+    );
   }
 
   function safeRedirectTarget(raw) {
@@ -29,9 +39,7 @@
     raw = String(raw).replace(/^\/+/, '');
     var onlyPage = normalizePage(raw.split('?')[0].split('#')[0]);
     if (
-      onlyPage === 'login.html' ||
-      onlyPage === 'register.html' ||
-      onlyPage === 'forgot-password.html' ||
+      isAuthFormPage(onlyPage) ||
       /^https?:/i.test(raw) ||
       raw.indexOf('redirect=') !== -1
     ) {
@@ -42,7 +50,16 @@
 
   var page = normalizePage(location.pathname.split('/').pop());
 
-  function hasSupabaseSession() {
+  // Never bounce auth pages — prevents /login ↔ login.html redirect loops
+  if (isAuthFormPage(page)) {
+    if (hasSession() && (page === 'login.html' || page === 'register.html')) {
+      var params = new URLSearchParams(location.search);
+      location.replace(safeRedirectTarget(params.get('redirect') || 'index.html'));
+    }
+    return;
+  }
+
+  function hasSession() {
     try {
       for (var i = 0; i < localStorage.length; i++) {
         var key = localStorage.key(i);
@@ -59,16 +76,7 @@
     return false;
   }
 
-  var loggedIn = hasSupabaseSession();
-
-  if (!loggedIn && !PUBLIC[page]) {
-    var target = safeRedirectTarget(page + location.search + location.hash);
-    location.replace('login.html?redirect=' + encodeURIComponent(target));
-    return;
-  }
-
-  if (loggedIn && (page === 'login.html' || page === 'register.html')) {
-    var params = new URLSearchParams(location.search);
-    location.replace(safeRedirectTarget(params.get('redirect') || 'index.html'));
+  if (!hasSession() && !PUBLIC[page]) {
+    location.replace('login.html?redirect=' + encodeURIComponent(safeRedirectTarget(page)));
   }
 })();
