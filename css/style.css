@@ -4555,3 +4555,81 @@ html[data-theme="dark"] .visibility-btn .vis-btn-label {
 html[data-theme="dark"] .visibility-btn .vis-btn-sub {
   color: #a7b8b3 !important;
 }
+
+/* Planner tables / chips / rows — full dark readability */
+html[data-theme="dark"] .stat-chip,
+html[data-theme="dark"] .dynamic-row,
+html[data-theme="dark"] .kanban-col,
+html[data-theme="dark"] .kanban-card,
+html[data-theme="dark"] .kanban-col .count,
+html[data-theme="dark"] .toolkit-pick,
+html[data-theme="dark"] .note-chip,
+html[data-theme="dark"] .theme-chip,
+html[data-theme="dark"] .invite-rsvp-row,
+html[data-theme="dark"] .whos-coming-panel,
+html[data-theme="dark"] .share-link-box,
+html[data-theme="dark"] .team-compose,
+html[data-theme="dark"] .optional-guest-panel,
+html[data-theme="dark"] .custom-category-box,
+html[data-theme="dark"] .ai-box,
+html[data-theme="dark"] .budget-summary,
+html[data-theme="dark"] .list-toolbar,
+html[data-theme="dark"] .planner-tab,
+html[data-theme="dark"] .seat-canvas,
+html[data-theme="dark"] .doc-drop,
+html[data-theme="dark"] .menu-preview {
+  background: #15211f !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .stat-chip .label {
+  color: #a7b8b3 !important;
+}
+
+html[data-theme="dark"] .stat-chip .value,
+html[data-theme="dark"] .dynamic-row,
+html[data-theme="dark"] .kanban-col h4,
+html[data-theme="dark"] .toolkit-pick,
+html[data-theme="dark"] .note-chip,
+html[data-theme="dark"] .whos-coming-head h2 {
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] .dynamic-row input,
+html[data-theme="dark"] .dynamic-row select,
+html[data-theme="dark"] .dynamic-row textarea,
+html[data-theme="dark"] .list-toolbar input,
+html[data-theme="dark"] .list-toolbar select,
+html[data-theme="dark"] .share-link-row input,
+html[data-theme="dark"] .kanban-compose input,
+html[data-theme="dark"] .kanban-compose textarea {
+  background: #0f1716 !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .progress-bar {
+  background: #2f403c !important;
+}
+
+html[data-theme="dark"] .note-chip.active,
+html[data-theme="dark"] .planner-tab.active {
+  background: rgba(45, 212, 191, 0.18) !important;
+  color: #99f6e4 !important;
+  border-color: #2dd4bf !important;
+}
+
+html[data-theme="dark"] table,
+html[data-theme="dark"] .budget-table,
+html[data-theme="dark"] .guest-table {
+  background: #15211f !important;
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] table th,
+html[data-theme="dark"] table td {
+  background: transparent !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
