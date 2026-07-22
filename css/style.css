@@ -2956,10 +2956,14 @@ h4 { font-size: 1.25rem; }
   border-radius: var(--radius);
   padding: 14px;
   margin-bottom: 16px;
-  background: #fff;
+  background: var(--card);
+  color: var(--text);
 }
 
-.ai-chat h4 { margin-bottom: 10px; }
+.ai-chat h4 {
+  margin-bottom: 10px;
+  color: var(--text);
+}
 
 .ai-chat-log {
   max-height: 220px;
@@ -2989,6 +2993,7 @@ h4 { font-size: 1.25rem; }
   align-self: flex-start;
   background: var(--background);
   border: 1px solid var(--border);
+  color: var(--text);
 }
 
 .ai-chat-input-row {
@@ -3002,6 +3007,8 @@ h4 { font-size: 1.25rem; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font: inherit;
+  background: var(--background);
+  color: var(--text);
 }
 
 .ai-quick-asks {
@@ -4630,6 +4637,32 @@ html[data-theme="dark"] .guest-table {
 html[data-theme="dark"] table th,
 html[data-theme="dark"] table td {
   background: transparent !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .ai-chat,
+html[data-theme="dark"] .ai-box,
+html[data-theme="dark"] .ai-chat-bubble.assistant {
+  background: #15211f !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .ai-chat h4,
+html[data-theme="dark"] .ai-box-head h4 {
+  color: #f3faf8 !important;
+}
+
+html[data-theme="dark"] .ai-chat-input-row input {
+  background: #0f1716 !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .ai-quick-asks .btn,
+html[data-theme="dark"] .ai-quick-asks button {
+  background: #1a2523 !important;
   color: #eef4f2 !important;
   border-color: #2f403c !important;
 }
