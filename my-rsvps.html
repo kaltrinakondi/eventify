@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My RSVPs - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="dashboard.html">Dashboard</a>
+        <a href="my-events.html">My Events</a>
+        <a href="my-rsvps.html">My RSVPs</a>
+        <a href="favorites.html">Favorite Events</a>
+        <a href="contact.html">Contact</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="page-header"><div class="container"><h1>My RSVPs</h1><p>Events you're going to or interested in</p></div></div>
+
+  <section class="events-section">
+    <div class="container">
+      <div id="loading" class="loading"><div class="spinner"></div><p>Loading RSVPs...</p></div>
+      <div class="events-grid" id="rsvp-grid"></div>
+      <div id="empty" class="empty-state hidden"><h3>No RSVPs yet</h3><p><a href="events.html">Discover events</a></p></div>
+    </div>
+  </section>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      if (!Eventify.requireAuth('my-rsvps.html')) return;
+      const data = await EventifyDB.getMyRsvps(Eventify.currentUser.id);
+      document.getElementById('loading').classList.add('hidden');
+      if (data.events?.length) {
+        const grid = document.getElementById('rsvp-grid');
+        grid.innerHTML = data.events.map(e => Eventify.renderEventCard(e, { showFavorite: true })).join('');
+        Eventify.bindFavoriteButtons(grid);
+      } else {
+        document.getElementById('empty').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

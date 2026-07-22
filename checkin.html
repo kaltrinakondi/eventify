@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guest Check-in - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=6">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links"></div>
+      <div class="nav-auth" id="nav-auth"></div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <section class="events-section">
+    <div class="container" style="max-width:720px;">
+      <h1>Guest check-in</h1>
+      <p class="card-desc">Scan or enter a guest code to mark arrival. Hosts only.</p>
+      <div id="checkin-box" class="planner-card" style="margin-top:20px;">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      if (!Eventify.currentUser) return;
+      const id = new URLSearchParams(location.search).get('id');
+      const box = document.getElementById('checkin-box');
+      if (!id) {
+        box.innerHTML = '<p class="empty-state">Missing event id.</p>';
+        return;
+      }
+      const data = await Eventify.fetchEvents({ id, userId: Eventify.currentUser.id });
+      if (!data.success || !Eventify.isEventHost(data.event)) {
+        box.innerHTML = '<p class="empty-state">Only the host can check guests in.</p>';
+        return;
+      }
+      const e = data.event;
+      const guests = e.planning_data?.guests || [];
+      const inviteUrl = e.share_token ? EventifyDB.inviteUrl(e.share_token) : location.href;
+      const qr = EventifyFeatures.qrUrl(inviteUrl);
+
+      const render = async () => {
+        const checked = await EventifyFeatures.listCheckins(id);
+        box.innerHTML = `
+          <h3>${Eventify.escapeHtml(e.title)}</h3>
+          <div class="checkin-qr"><img src="${qr}" alt="Event QR"><p>Invite / event QR</p></div>
+          <div class="list-toolbar">
+            <input type="text" id="checkin-name" placeholder="Guest name" style="flex:1;">
+            <input type="text" id="checkin-code" placeholder="Code (optional)" style="width:140px;">
+            <button type="button" class="btn btn-primary" id="btn-checkin">Check in</button>
+          </div>
+          <h4 style="margin:18px 0 8px;">Quick pick from guest list</h4>
+          <div class="checkin-guest-list">
+            ${guests.slice(0, 40).map(g => `
+              <button type="button" class="btn btn-sm btn-outline checkin-guest-btn" data-name="${Eventify.escapeHtml(g.name || '')}" data-key="${Eventify.escapeHtml(g.id || g.name || '')}">
+                ${Eventify.escapeHtml(g.name || 'Guest')}
+              </button>
+            `).join('') || '<p class="note-chip-hint">No planner guests yet — type a name above.</p>'}
+          </div>
+          <h4 style="margin:18px 0 8px;">Checked in (${checked.length})</h4>
+          <div class="dynamic-list">
+            ${checked.map(c => `<div class="dynamic-row" style="grid-template-columns:1fr auto;"><strong>${Eventify.escapeHtml(c.guest_name)}</strong><span>${new Date(c.checked_in_at).toLocaleTimeString()}</span></div>`).join('') || '<p class="empty-state">No check-ins yet.</p>'}
+          </div>
+        `;
+
+        document.getElementById('btn-checkin')?.addEventListener('click', async () => {
+          const name = document.getElementById('checkin-name').value.trim();
+          const code = document.getElementById('checkin-code').value.trim() || name;
+          if (!name) return Eventify.showToast('Enter a guest name', 'error');
+          await EventifyFeatures.checkInGuest(id, code.toLowerCase(), name);
+          Eventify.showToast('Checked in', 'success');
+          render();
+        });
+        document.querySelectorAll('.checkin-guest-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            await EventifyFeatures.checkInGuest(id, (btn.dataset.key || btn.dataset.name).toLowerCase(), btn.dataset.name);
+            Eventify.showToast(`Checked in ${btn.dataset.name}`, 'success');
+            render();
+          });
+        });
+      };
+      render();
+    });
+  </script>
+</body>
+</html>

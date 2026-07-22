@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#78350F"/>
+  <circle cx="250" cy="220" r="80" fill="#D97706" opacity="0.6"/>
+  <circle cx="400" cy="200" r="90" fill="#F59E0B" opacity="0.5"/>
+  <circle cx="550" cy="230" r="70" fill="#B45309" opacity="0.6"/>
+  <rect x="300" y="320" width="200" height="20" rx="10" fill="#92400E"/>
+  <text x="400" y="420" text-anchor="middle" fill="#FDE68A" font-family="Arial,sans-serif" font-size="24">Food & Wine</text>
+</svg>

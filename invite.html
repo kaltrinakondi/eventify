@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>You're Invited - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+  <script src="js/theme.js"></script>
+</head>
+<body class="invite-page">
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="invite-main">
+    <div class="container">
+      <div id="invite-loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading invitation...</p>
+      </div>
+      <div id="invite-content" class="hidden"></div>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 Eventify. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    (function () {
+      const token = new URLSearchParams(window.location.search).get('t') || '';
+      const voterStorageKey = token ? `eventify_invite_voter_${token}` : '';
+
+      function voterKey() {
+        if (!voterStorageKey) return '';
+        let key = localStorage.getItem(voterStorageKey);
+        if (!key) {
+          key = EventifyDB.makeShareToken() + EventifyDB.makeShareToken().slice(0, 8);
+          localStorage.setItem(voterStorageKey, key);
+        }
+        return key;
+      }
+
+      function statusLabel(status) {
+        if (status === 'going') return "I'm coming";
+        if (status === 'maybe') return 'Maybe';
+        if (status === 'not_going') return "I'm not coming";
+        return '';
+      }
+
+      async function loadInvite() {
+        const loading = document.getElementById('invite-loading');
+        const content = document.getElementById('invite-content');
+        if (!token) {
+          loading.classList.add('hidden');
+          content.classList.remove('hidden');
+          content.innerHTML = `
+            <div class="invite-card-panel empty-state">
+              <h1>Invalid invite link</h1>
+              <p>This invitation link is missing or incomplete.</p>
+            </div>`;
+          return;
+        }
+
+        const data = await EventifyDB.getInviteEvent(token);
+        loading.classList.add('hidden');
+        content.classList.remove('hidden');
+
+        if (!data.success || !data.event) {
+          content.innerHTML = `
+            <div class="invite-card-panel empty-state">
+              <h1>Invite not found</h1>
+              <p>${Eventify.escapeHtml(data.message || 'This link may have expired.')}</p>
+            </div>`;
+          return;
+        }
+
+        const e = data.event;
+        const hostName = e.host_name || e.organizer_name || 'Host';
+        document.title = `${e.title} — You're Invited`;
+        const icon = typeof getCategoryIcon === 'function' ? getCategoryIcon(e.category) : '🎉';
+
+        content.innerHTML = `
+          <div class="invite-layout">
+            <div class="invite-hero-card">
+              <img src="${Eventify.escapeHtml(e.image || 'images/default-event.jpg')}" alt="" onerror="this.src='images/default-event.jpg'">
+              <div class="invite-hero-copy">
+                <p class="invite-eyebrow">You're invited</p>
+                <h1>${Eventify.escapeHtml(e.title)}</h1>
+                <p class="invite-host">Hosted by <strong>${Eventify.escapeHtml(hostName)}</strong></p>
+                <p class="invite-meta">${icon} ${Eventify.escapeHtml(e.category || 'Event')}</p>
+                <p class="invite-meta">📅 ${Eventify.formatDate(e.date)} · 🕐 ${Eventify.formatTime(e.time)}</p>
+                <p class="invite-meta">📍 ${Eventify.escapeHtml(e.venue_name || e.location || '')}</p>
+                <p class="invite-desc">${Eventify.escapeHtml(e.description || '')}</p>
+              </div>
+            </div>
+
+            <div class="invite-card-panel" id="rsvp-panel">
+              <h2>Will you attend?</h2>
+              <p class="card-desc">Tell <strong>${Eventify.escapeHtml(hostName)}</strong> if you're coming. Only the host can see responses.</p>
+              <div class="form-group">
+                <label for="guest_name">Your name *</label>
+                <input type="text" id="guest_name" placeholder="Your full name" required>
+              </div>
+              <div class="form-group">
+                <label for="guest_email">Email (optional)</label>
+                <input type="email" id="guest_email" placeholder="you@email.com">
+              </div>
+              <div class="invite-vote-btns">
+                <button type="button" class="btn btn-primary invite-vote" data-status="going">✓ I'm coming</button>
+                <button type="button" class="btn btn-secondary invite-vote" data-status="maybe">? Maybe</button>
+                <button type="button" class="btn btn-outline invite-vote" data-status="not_going">✗ I'm not coming</button>
+              </div>
+              <p id="rsvp-feedback" class="invite-feedback hidden" aria-live="polite"></p>
+            </div>
+          </div>
+        `;
+
+        const saved = JSON.parse(localStorage.getItem(`eventify_invite_vote_${token}`) || 'null');
+        if (saved?.name) document.getElementById('guest_name').value = saved.name;
+        if (saved?.email) document.getElementById('guest_email').value = saved.email;
+        if (saved?.status) {
+          document.querySelectorAll('.invite-vote').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.status === saved.status);
+          });
+          const fb = document.getElementById('rsvp-feedback');
+          fb.classList.remove('hidden');
+          fb.textContent = `You voted: ${statusLabel(saved.status)}. You can change it anytime.`;
+        }
+
+        document.querySelectorAll('.invite-vote').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const name = document.getElementById('guest_name').value.trim();
+            const email = document.getElementById('guest_email').value.trim();
+            if (!name) {
+              Eventify.showToast('Enter your name first', 'error');
+              document.getElementById('guest_name').focus();
+              return;
+            }
+            btn.disabled = true;
+            const result = await EventifyDB.submitInviteRsvp(token, {
+              name,
+              email,
+              status: btn.dataset.status,
+              voterKey: voterKey(),
+            });
+            btn.disabled = false;
+            if (!result.success) {
+              Eventify.showToast(result.message || 'Could not save RSVP', 'error');
+              return;
+            }
+            if (result.voter_key) localStorage.setItem(voterStorageKey, result.voter_key);
+            localStorage.setItem(`eventify_invite_vote_${token}`, JSON.stringify({
+              name, email, status: result.status || btn.dataset.status,
+            }));
+            Eventify.showToast(result.message || 'RSVP saved!', 'success');
+            loadInvite();
+          });
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', async () => {
+        await Eventify.init();
+        loadInvite();
+      });
+    })();
+  </script>
+</body>
+</html>

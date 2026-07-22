@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#581C87"/>
+  <circle cx="200" cy="250" r="80" fill="#A855F7" opacity="0.6"/>
+  <circle cx="400" cy="200" r="100" fill="#EC4899" opacity="0.5"/>
+  <circle cx="600" cy="280" r="70" fill="#7C3AED" opacity="0.6"/>
+  <text x="400" y="420" text-anchor="middle" fill="#E9D5FF" font-family="Arial,sans-serif" font-size="28" font-weight="bold">Music Festival</text>
+</svg>

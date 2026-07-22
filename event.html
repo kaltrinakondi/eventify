@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Details - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="calendar.html">Calendar</a>
+        <a href="create-event.html">Create Event</a>
+        <a href="contact.html">Contact</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <section class="event-detail">
+    <div class="container">
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading event...</p>
+      </div>
+      <div id="event-content" class="hidden"></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 Eventify. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!id) { window.location.href = 'events.html'; return; }
+      loadEvent(id);
+    });
+
+    async function loadEvent(id) {
+      try {
+        const data = await Eventify.fetchEvents({ id });
+        document.getElementById('loading').classList.add('hidden');
+
+        if (!data.success) {
+          const msg = data.restricted
+            ? data.message
+            : 'Event not found.';
+          document.getElementById('event-content').innerHTML = `
+            <div class="empty-state" style="padding:48px 24px;text-align:center;">
+              <h2>${data.restricted ? '🔒 Private Event' : 'Event not found'}</h2>
+              <p>${Eventify.escapeHtml(msg)}</p>
+              ${data.restricted ? '<p><a href="events.html" class="btn btn-primary" style="margin-top:16px;display:inline-block;">Browse public events</a></p>' : ''}
+            </div>`;
+          document.getElementById('event-content').classList.remove('hidden');
+          return;
+        }
+
+        const e = data.event;
+        const mapQuery = encodeURIComponent(e.location);
+        const icon = getCategoryIcon(e.category);
+        const userRsvp = data.userRsvp;
+        const isFav = data.isFavorite;
+        const visLabel = e.visibility === 'private' ? '🔒 Private' : e.visibility === 'invite_only' ? '📋 Invite Only' : '🌍 Public';
+        const guestCount = e.planning_data?.guests?.length || 0;
+
+        document.getElementById('event-content').innerHTML = `
+          <div class="event-detail-grid">
+            <div>
+              <div class="event-detail-image">
+                <img src="${e.image || 'images/default-event.jpg'}" alt="${Eventify.escapeHtml(e.title)}" onerror="this.src='images/default-event.jpg'">
+              </div>
+              <span class="event-badge">${icon} ${Eventify.escapeHtml(e.category)}</span>
+              <span class="privacy-badge" style="margin-left:8px;">${visLabel}</span>
+              <h1>${Eventify.escapeHtml(e.title)}</h1>
+              <div class="event-detail-meta">
+                <div class="event-detail-meta-item">📅 ${Eventify.formatDate(e.date)}</div>
+                <div class="event-detail-meta-item">🕐 ${Eventify.formatTime(e.time)}</div>
+                <div class="event-detail-meta-item">👤 <a href="organizer.html?id=${e.organizer_id}">${Eventify.escapeHtml(e.organizer_name)}</a></div>
+                <div class="event-detail-meta-item">💰 ${Eventify.formatPrice(e.price)}</div>
+                ${guestCount ? `<div class="event-detail-meta-item">📋 ${guestCount} on guest list</div>` : ''}
+                <div class="event-detail-meta-item" id="event-views-meta">👁 …</div>
+              </div>
+              <p class="event-description">${Eventify.escapeHtml(e.description)}</p>
+              <div class="map-container">
+                <iframe src="https://maps.google.com/maps?q=${mapQuery}&output=embed" allowfullscreen loading="lazy"></iframe>
+              </div>
+              <div class="event-extra-actions">
+                <button type="button" class="btn btn-sm btn-outline" id="btn-report-event">Report event</button>
+              </div>
+            </div>
+            <div class="event-sidebar">
+              <div class="sidebar-card">
+                <p class="rsvp-count">📍 ${Eventify.escapeHtml(e.location)}</p>
+                ${Eventify.isEventHost(e) ? `
+                <p class="card-desc" style="margin-bottom:12px;">Host tools — only you can share the invite and see who replied.</p>
+                ` : `
+                <p style="margin-bottom:16px;color:var(--text-light);">RSVP below if you have an Eventify account.</p>
+                `}
+                ${!Eventify.isEventHost(e) ? `
+                <div class="rsvp-buttons">
+                  <button class="btn btn-primary btn-block rsvp-status-btn ${userRsvp === 'going' ? 'active' : ''}" data-status="going">✓ Going</button>
+                  <button class="btn btn-secondary btn-block rsvp-status-btn ${userRsvp === 'maybe' ? 'active' : ''}" data-status="maybe">? Maybe</button>
+                  <button class="btn btn-outline btn-block rsvp-status-btn ${userRsvp === 'not_going' ? 'active' : ''}" data-status="not_going">✗ Not Going</button>
+                </div>
+                <button class="btn btn-outline btn-block" id="btn-waitlist" style="margin-top:10px;">Join waitlist</button>
+                <button class="btn btn-outline btn-block favorite-detail-btn ${isFav ? 'favorited' : ''}" id="favorite-btn" style="margin-top:12px;">
+                  ${isFav ? '♥ Favorite Events' : '♡ Add to Favorites'}
+                </button>
+                ` : `
+                <button class="btn btn-primary btn-block" id="detail-whos-coming">👥 Who's coming</button>
+                <a class="btn btn-secondary btn-block" href="checkin.html?id=${e.id}" style="margin-top:10px;">✅ Guest check-in</a>
+                <button class="btn btn-outline btn-block favorite-detail-btn ${isFav ? 'favorited' : ''}" id="favorite-btn" style="margin-top:12px;">
+                  ${isFav ? '♥ Favorite Events' : '♡ Add to Favorites'}
+                </button>
+                `}
+              </div>
+              ${Eventify.isEventHost(e) ? `
+              <div class="sidebar-card" id="organizer-share-card">
+                <h3>Share invite link</h3>
+                <p class="card-desc">Only you (the host) can share this link. Guests cannot see who else is coming.</p>
+                <div class="share-link-row" style="margin-top:10px;">
+                  <input type="text" id="detail-share-url" readonly value="">
+                  <button type="button" class="btn btn-sm btn-primary" id="detail-copy-share">Copy</button>
+                </div>
+                <div class="share-channel-row" style="margin-top:10px;">
+                  <button type="button" class="btn btn-sm btn-secondary btn-icon-share" id="detail-whatsapp-share" title="Share on WhatsApp" aria-label="Share on WhatsApp">
+                    <svg class="share-brand-icon whatsapp" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-secondary btn-icon-share" id="detail-email-share" title="Share by Email" aria-label="Share by Email">
+                    <svg class="share-brand-icon email" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline" id="detail-export-rsvps">Export CSV</button>
+                </div>
+                <a href="create-event.html?edit=${e.id}" class="btn btn-sm btn-outline btn-block" style="margin-top:10px;">Open planner</a>
+                <div id="detail-invite-votes" style="margin-top:14px;"></div>
+              </div>` : ''}
+            </div>
+          </div>
+        `;
+        document.getElementById('event-content').classList.remove('hidden');
+
+        if (typeof EventifyFeatures !== 'undefined') {
+          EventifyFeatures.trackView(id).then(async () => {
+            const views = await EventifyFeatures.getViews(id);
+            const el = document.getElementById('event-views-meta');
+            if (el) el.textContent = `👁 ${views} views`;
+          });
+        }
+
+        document.getElementById('btn-waitlist')?.addEventListener('click', async () => {
+          if (!Eventify.requireAuth()) return;
+          const result = await EventifyFeatures.joinWaitlist(id, {
+            name: Eventify.currentUser.name || 'Guest',
+            email: Eventify.currentUser.email || '',
+            userId: Eventify.currentUser.id,
+          });
+          Eventify.showToast(result.message, result.success ? 'success' : 'error');
+          if (result.success && e.organizer_id) {
+            EventifyFeatures.pushNotification(e.organizer_id, {
+              title: 'New waitlist signup',
+              body: `${Eventify.currentUser.name || 'Someone'} joined the waitlist for ${e.title}`,
+              link: `event.html?id=${id}`,
+            });
+          }
+        });
+
+        document.getElementById('btn-report-event')?.addEventListener('click', async () => {
+          const reason = prompt('Why are you reporting this event?', 'Spam / inappropriate');
+          if (!reason) return;
+          const details = prompt('Any extra details? (optional)', '') || '';
+          const result = await EventifyFeatures.reportEvent(id, {
+            reason,
+            details,
+            reporterId: Eventify.currentUser?.id || null,
+          });
+          Eventify.showToast(result.message, 'success');
+        });
+
+        if (Eventify.isEventHost(e)) {
+          (async () => {
+            let token = e.share_token;
+            if (!token) {
+              const ensured = await EventifyDB.ensureShareToken(e.id, null);
+              if (ensured.success) token = ensured.share_token;
+            }
+            const urlInput = document.getElementById('detail-share-url');
+            const inviteUrl = token ? EventifyDB.inviteUrl(token) : '';
+            if (urlInput && inviteUrl) urlInput.value = inviteUrl;
+
+            const shareText = () => Eventify.buildInviteShareText({
+              title: e.title,
+              date: e.date,
+              time: e.time,
+              location: e.venue_name || e.location,
+              url: urlInput?.value || inviteUrl,
+              hostName: Eventify.currentUser?.name || e.organizer_name || '',
+            });
+
+            document.getElementById('detail-copy-share')?.addEventListener('click', async () => {
+              const url = urlInput?.value;
+              if (!url) return;
+              try {
+                await navigator.clipboard.writeText(url);
+                Eventify.showToast('Invite link copied!', 'success');
+              } catch {
+                urlInput.select();
+              }
+            });
+            document.getElementById('detail-whatsapp-share')?.addEventListener('click', () => {
+              if (!urlInput?.value) return Eventify.showToast('No invite link yet', 'error');
+              Eventify.openWhatsAppInvite(shareText());
+            });
+            document.getElementById('detail-email-share')?.addEventListener('click', () => {
+              if (!urlInput?.value) return Eventify.showToast('No invite link yet', 'error');
+              Eventify.openEmailInvite({
+                subject: `You're invited: ${e.title}`,
+                body: shareText(),
+              });
+            });
+
+            const votesBox = document.getElementById('detail-invite-votes');
+            let latestVotes = [];
+            if (votesBox) {
+              const votes = await EventifyDB.getOrganizerInviteRsvps(e.id);
+              if (!votes.success) {
+                votesBox.innerHTML = `<p class="note-chip-hint">${Eventify.escapeHtml(votes.message || 'Only the host can view RSVPs.')}</p>`;
+              } else {
+                latestVotes = votes.votes || [];
+                const c = votes.counts || {};
+                const labels = { going: 'Coming', maybe: 'Maybe', not_going: 'Not coming' };
+                votesBox.innerHTML = `
+                  <p class="invite-tally"><strong>${c.going || 0}</strong> coming · <strong>${c.maybe || 0}</strong> maybe · <strong>${c.not_going || 0}</strong> not coming</p>
+                  ${latestVotes.slice(0, 8).map(v => `
+                    <div class="invite-rsvp-row status-${Eventify.escapeHtml(v.status)}">
+                      <strong>${Eventify.escapeHtml(v.guest_name)}</strong>
+                      <span class="invite-rsvp-status">${labels[v.status] || v.status}</span>
+                    </div>
+                  `).join('') || '<p class="note-chip-hint">No link RSVPs yet.</p>'}
+                `;
+              }
+            }
+            document.getElementById('detail-export-rsvps')?.addEventListener('click', () => {
+              Eventify.exportInviteRsvpsCsv(latestVotes, e.title);
+            });
+            document.getElementById('detail-whos-coming')?.addEventListener('click', () => {
+              Eventify.showWhosComingModal({
+                title: e.title,
+                votes: latestVotes,
+                initialFilter: 'going',
+              });
+            });
+          })();
+        }
+
+        document.querySelectorAll('.rsvp-status-btn').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            if (!Eventify.requireAuth()) return;
+            const result = await Eventify.rsvpEvent(id, btn.dataset.status);
+            if (result?.success) loadEvent(id);
+          });
+        });
+
+        document.getElementById('favorite-btn')?.addEventListener('click', async () => {
+          if (!Eventify.requireAuth()) return;
+          const result = await Eventify.toggleFavorite(id);
+          if (result?.success) loadEvent(id);
+        });
+      } catch {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('event-content').innerHTML = '<p class="empty-state">Failed to load event.</p>';
+        document.getElementById('event-content').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>

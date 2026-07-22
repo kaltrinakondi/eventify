@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="index.html#categories">Categories</a>
+        <a href="calendar.html">Calendar</a>
+        <a href="create-event.html">Create Event</a>
+        <a href="contact.html">Contact</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="dashboard-layout container">
+    <aside class="dashboard-sidebar">
+      <div class="dashboard-user">
+        <div class="avatar" id="user-avatar">U</div>
+        <h3 id="user-name">User</h3>
+        <p id="user-email"></p>
+      </div>
+      <nav class="dashboard-nav">
+        <a href="#profile" class="dash-nav active" data-panel="profile">👤 My Profile</a>
+        <a href="#events" class="dash-nav" data-panel="events">📅 My Events</a>
+        <a href="#rsvps" class="dash-nav" data-panel="rsvps">✅ My RSVPs</a>
+        <a href="#favorites" class="dash-nav" data-panel="favorites">♥ Favorite Events</a>
+        <a href="create-event.html" class="dash-nav">➕ Create Event</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="stats-row" id="stats-row"></div>
+
+      <section class="dash-panel active" id="panel-profile">
+        <h2>Edit Profile</h2>
+        <div class="form-card">
+          <div id="profile-alert" class="alert hidden"></div>
+          <form id="profile-form">
+            <div class="form-group">
+              <label>Full Name</label>
+              <input type="text" id="profile-name" required>
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" id="profile-email" disabled>
+            </div>
+            <div class="form-group">
+              <label>Phone</label>
+              <input type="tel" id="profile-phone" placeholder="+1 555 000 0000">
+            </div>
+            <div class="form-group">
+              <label>Bio</label>
+              <textarea id="profile-bio" rows="4" placeholder="Tell us about yourself..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Profile</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="dash-panel" id="panel-events">
+        <h2>My Events</h2>
+        <div id="dash-events" class="events-grid"></div>
+        <div id="empty-dash-events" class="empty-state hidden"><p>No events yet. <a href="create-event.html">Create one!</a></p></div>
+      </section>
+
+      <section class="dash-panel" id="panel-rsvps">
+        <h2>My RSVPs</h2>
+        <div id="dash-rsvps" class="events-grid"></div>
+        <div id="empty-dash-rsvps" class="empty-state hidden"><p>No RSVPs yet. <a href="events.html">Browse events</a></p></div>
+      </section>
+
+      <section class="dash-panel" id="panel-favorites">
+        <h2>Favorite Events</h2>
+        <div id="dash-favorites" class="events-grid"></div>
+        <div id="empty-dash-favorites" class="empty-state hidden"><p>No favorite events yet.</p></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/categories.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      if (!Eventify.requireAuth('dashboard.html')) return;
+
+      const u = Eventify.currentUser;
+      document.getElementById('user-name').textContent = u.name;
+      document.getElementById('user-email').textContent = u.email;
+      document.getElementById('user-avatar').textContent = u.name.charAt(0).toUpperCase();
+      document.getElementById('profile-name').value = u.name;
+      document.getElementById('profile-email').value = u.email;
+      document.getElementById('profile-phone').value = u.phone || '';
+      document.getElementById('profile-bio').value = u.bio || '';
+
+      const stats = await EventifyDB.getDashboardStats(u.id);
+      document.getElementById('stats-row').innerHTML = `
+        <div class="stat-card"><div class="stat-value">${stats.created}</div><div class="stat-label">My Events</div></div>
+        <div class="stat-card"><div class="stat-value">${stats.rsvps}</div><div class="stat-label">RSVPs</div></div>
+        <div class="stat-card"><div class="stat-value">${stats.favorites}</div><div class="stat-label">Favorite Events</div></div>
+      `;
+
+      document.querySelectorAll('.dash-nav[data-panel]').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          document.querySelectorAll('.dash-nav').forEach(l => l.classList.remove('active'));
+          document.querySelectorAll('.dash-panel').forEach(p => p.classList.remove('active'));
+          link.classList.add('active');
+          document.getElementById(`panel-${link.dataset.panel}`).classList.add('active');
+        });
+      });
+
+      document.getElementById('profile-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alert = document.getElementById('profile-alert');
+        const data = await EventifyDB.updateProfile(u.id, {
+          name: document.getElementById('profile-name').value.trim(),
+          phone: document.getElementById('profile-phone').value.trim(),
+          bio: document.getElementById('profile-bio').value.trim(),
+        });
+        alert.className = `alert ${data.success ? 'alert-success' : 'alert-error'}`;
+        alert.textContent = data.message;
+        alert.classList.remove('hidden');
+        if (data.success) {
+          Eventify.currentUser.name = document.getElementById('profile-name').value.trim();
+          Eventify.setupNavbar();
+        }
+      });
+
+      loadDashboardData();
+    });
+
+    async function loadDashboardData() {
+      const uid = Eventify.currentUser.id;
+
+      const myEvents = await EventifyDB.getMyEvents(uid);
+      const eventsGrid = document.getElementById('dash-events');
+      if (myEvents.events?.length) {
+        eventsGrid.innerHTML = myEvents.events.map(e =>
+          Eventify.renderEventCard(e, { showRsvp: false, showActions: true, showDelete: true, showFavorite: false })
+        ).join('');
+        Eventify.bindDeleteButtons(eventsGrid);
+      } else document.getElementById('empty-dash-events').classList.remove('hidden');
+
+      const rsvps = await EventifyDB.getMyRsvps(uid);
+      const rsvpGrid = document.getElementById('dash-rsvps');
+      if (rsvps.events?.length) {
+        rsvpGrid.innerHTML = rsvps.events.map(e =>
+          Eventify.renderEventCard(e, { showRsvp: false, showFavorite: true })
+        ).join('');
+        Eventify.bindFavoriteButtons(rsvpGrid);
+      } else document.getElementById('empty-dash-rsvps').classList.remove('hidden');
+
+      const favs = await EventifyDB.getFavorites(uid);
+      const favGrid = document.getElementById('dash-favorites');
+      if (favs.events?.length) {
+        favGrid.innerHTML = favs.events.map(e =>
+          Eventify.renderEventCard(e, { showRsvp: true, showFavorite: true })
+        ).join('');
+        Eventify.bindFavoriteButtons(favGrid);
+        Eventify.bindRsvpButtons(favGrid);
+      } else document.getElementById('empty-dash-favorites').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

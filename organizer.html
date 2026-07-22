@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Organizer - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=6">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links"></div>
+      <div class="nav-auth" id="nav-auth"></div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <section class="events-section">
+    <div class="container">
+      <div id="organizer-profile" class="organizer-profile loading"><div class="spinner"></div></div>
+      <h2 style="margin:28px 0 16px;">Public events</h2>
+      <div class="events-grid" id="organizer-events"></div>
+    </div>
+  </section>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/categories.js?v=8"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      const id = new URLSearchParams(location.search).get('id');
+      const box = document.getElementById('organizer-profile');
+      const grid = document.getElementById('organizer-events');
+      if (!id) {
+        box.innerHTML = '<p class="empty-state">Organizer not found.</p>';
+        return;
+      }
+      const { data: profile } = await sb.from('profiles').select('id, name, email, bio, created_at').eq('id', id).maybeSingle();
+      if (!profile) {
+        box.innerHTML = '<p class="empty-state">Organizer not found.</p>';
+        return;
+      }
+      box.classList.remove('loading');
+      box.innerHTML = `
+        <div class="organizer-card">
+          <div class="organizer-avatar">${(profile.name || 'O').charAt(0).toUpperCase()}</div>
+          <div>
+            <h1>${Eventify.escapeHtml(profile.name || 'Organizer')}</h1>
+            <p>${Eventify.escapeHtml(profile.bio || 'Event organizer on Eventify')}</p>
+            <p class="card-desc">Member since ${new Date(profile.created_at).toLocaleDateString()}</p>
+          </div>
+        </div>
+      `;
+      const events = await Eventify.fetchEvents({ organizer_id: id, limit: 24 });
+      const publicEvents = (events.events || []).filter(e => (e.visibility || 'public') === 'public');
+      grid.innerHTML = publicEvents.length
+        ? publicEvents.map(e => Eventify.renderEventCard(e)).join('')
+        : '<p class="empty-state">No public events yet.</p>';
+      Eventify.bindRsvpButtons(grid);
+      Eventify.bindFavoriteButtons(grid);
+    });
+  </script>
+</body>
+</html>

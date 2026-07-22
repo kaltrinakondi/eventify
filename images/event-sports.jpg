@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#14532D"/>
+  <ellipse cx="400" cy="350" rx="350" ry="80" fill="#166534"/>
+  <circle cx="300" cy="200" r="60" fill="#22C55E" opacity="0.6"/>
+  <circle cx="500" cy="180" r="50" fill="#4ADE80" opacity="0.5"/>
+  <text x="400" y="420" text-anchor="middle" fill="#BBF7D0" font-family="Arial,sans-serif" font-size="24">Sports & Fitness</text>
+</svg>

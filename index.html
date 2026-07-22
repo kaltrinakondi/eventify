@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventify - Discover Amazing Events</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo">
+        <span class="logo-icon">E</span> Eventify
+      </a>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="index.html#categories">Categories</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Discover & Create Amazing Events</h1>
+      <p>Plan, discover, and book unforgettable events all in one place</p>
+
+      <div class="guest-banner" id="guest-banner">
+        <p class="guest-banner-text">New here? Create a free account to publish events and RSVP.</p>
+      </div>
+
+      <div class="hero-auth-actions" id="hero-auth-actions">
+        <a href="create-event.html" class="btn btn-lg btn-primary" id="hero-create-event">Create Event</a>
+      </div>
+
+      <form class="hero-search" action="events.html" method="GET" autocomplete="off">
+        <div class="hero-search-field">
+          <input type="text" name="search" placeholder="Find public events by name, place, or vibe…" autocomplete="off">
+        </div>
+        <select name="category" id="hero-category-filter">
+          <option value="all">All Categories</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Search</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="categories" id="categories">
+    <div class="container">
+      <div class="section-title">
+        <h2>Popular Categories</h2>
+        <p>Pick a category — or use Add More to create any event you want</p>
+      </div>
+      <div class="category-grid" id="category-grid"></div>
+    </div>
+  </section>
+
+  <section class="events-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>Featured Events</h2>
+        <p>Don't miss these upcoming highlights</p>
+      </div>
+      <div class="events-grid" id="featured-events"></div>
+    </div>
+  </section>
+
+  <section class="events-section" style="background: var(--card);">
+    <div class="container">
+      <div class="section-title">
+        <h2>Upcoming Events</h2>
+        <p>See what's happening soon</p>
+      </div>
+      <div class="events-grid" id="upcoming-events"></div>
+      <div style="text-align: center; margin-top: 40px;">
+        <a href="events.html" class="btn btn-primary btn-lg">View All Events</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="events-section hidden" id="section-popular">
+    <div class="container">
+      <div class="section-title">
+        <h2>Popular Events</h2>
+        <p>Loved by the Eventify community</p>
+      </div>
+      <div class="events-grid" id="popular-events"></div>
+    </div>
+  </section>
+
+  <section class="events-section hidden" id="section-recent" style="background: var(--card);">
+    <div class="container">
+      <div class="section-title">
+        <h2>Recently Added Events</h2>
+        <p>Freshly published by our organizers</p>
+      </div>
+      <div class="events-grid" id="recent-events"></div>
+    </div>
+  </section>
+
+  <section class="events-section hidden" id="section-recommended">
+    <div class="container">
+      <div class="section-title">
+        <h2>Recommended For You</h2>
+        <p>Based on your interests and activity</p>
+      </div>
+      <div class="events-grid" id="recommended-events"></div>
+    </div>
+  </section>
+
+  <section class="testimonials-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>What Our Users Say</h2>
+        <p>Real stories from the Eventify community</p>
+      </div>
+      <div class="testimonial-grid" id="testimonial-grid"></div>
+    </div>
+  </section>
+
+  <section class="stats-section">
+    <div class="container">
+      <div class="stats-section-grid" id="stats-section-grid">
+        <div>
+          <div class="stat-value">—</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div>
+          <div class="stat-value">—</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div>
+          <div class="stat-value">—</div>
+          <div class="stat-label">Upcoming Events</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+          <p>Your go-to platform for discovering, creating, and managing events. Connect with your community through unforgettable experiences.</p>
+          <div class="social-links">
+            <a href="#" aria-label="Facebook">📘</a>
+            <a href="#" aria-label="Twitter">🐦</a>
+            <a href="#" aria-label="Instagram">📸</a>
+            <a href="#" aria-label="LinkedIn">💼</a>
+          </div>
+        </div>
+        <div>
+          <h4>Quick Links</h4>
+          <ul class="footer-links">
+            <li><a href="events.html">Browse Events</a></li>
+            <li><a href="index.html#categories">Categories</a></li>
+            <li><a href="calendar.html">Calendar</a></li>
+            <li><a href="create-event.html">Create Event</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Account</h4>
+          <ul class="footer-links">
+            <li><a href="login.html">Log In</a></li>
+            <li><a href="register.html">Sign Up</a></li>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="contact.html">Contact Us</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contact</h4>
+          <ul class="footer-links">
+            <li>📍 123 Event Street, New York, NY</li>
+            <li>📧 hello@eventify.com</li>
+            <li>📞 +1 (555) 123-4567</li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 Eventify. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/categories.js?v=8"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    const TESTIMONIALS = [
+      { name: 'Sarah Johnson', role: 'Event Organizer', text: 'Eventify made planning my conference effortless. RSVP tracking and ticketing all in one place saved me hours every week.', stars: 5 },
+      { name: 'Michael Chen', role: 'Music Enthusiast', text: 'I discover more concerts and festivals through Eventify than anywhere else. The category filters are perfect for finding exactly what I love.', stars: 5 },
+      { name: 'Amara Diallo', role: 'Community Volunteer', text: 'Creating charity events and tracking who is coming has never been this simple. Highly recommend Eventify to any organizer.', stars: 4 },
+    ];
+
+    function renderTestimonial(t) {
+      return `
+        <div class="testimonial-card fade-in">
+          <div class="testimonial-stars">${'★'.repeat(t.stars)}${'☆'.repeat(5 - t.stars)}</div>
+          <p class="testimonial-text">"${t.text}"</p>
+          <div class="testimonial-author">
+            <div class="testimonial-avatar">${t.name.charAt(0)}</div>
+            <div>
+              <h5>${t.name}</h5>
+              <span>${t.role}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    async function loadEventSection(gridId, params) {
+      const grid = document.getElementById(gridId);
+      if (!grid) return;
+      Eventify.showLoading(grid, 'Loading events...');
+      const data = await Eventify.fetchEvents(params);
+      if (data.success && data.events.length) {
+        grid.innerHTML = data.events.map(e => Eventify.renderEventCard(e)).join('');
+        Eventify.bindRsvpButtons(grid);
+        Eventify.bindFavoriteButtons(grid);
+      } else {
+        grid.innerHTML = '<p class="empty-state">No events to show yet.</p>';
+      }
+      return data.events || [];
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+
+      document.getElementById('category-grid').innerHTML = renderCategoryGrid();
+      document.getElementById('hero-category-filter').innerHTML = renderCategoryFilterOptions();
+      document.getElementById('testimonial-grid').innerHTML = TESTIMONIALS.map(renderTestimonial).join('');
+
+      const featured = await loadEventSection('featured-events', { featured: 1, limit: 3 });
+      const upcoming = await loadEventSection('upcoming-events', { sort: 'date_asc', limit: 6 });
+
+      if (Eventify.currentUser) {
+        document.getElementById('section-popular').classList.remove('hidden');
+        document.getElementById('section-recent').classList.remove('hidden');
+        document.getElementById('section-recommended').classList.remove('hidden');
+
+        await loadEventSection('popular-events', { sort: 'popular', limit: 4 });
+        await loadEventSection('recent-events', { sort: 'recent', limit: 4 });
+
+        const shownIds = [...featured, ...upcoming].map(e => e.id);
+        const recommended = await EventifyDB.getRecommendedEvents(Eventify.currentUser.id, shownIds);
+        const recGrid = document.getElementById('recommended-events');
+        if (recommended.length) {
+          recGrid.innerHTML = recommended.map(e => Eventify.renderEventCard(e)).join('');
+          Eventify.bindRsvpButtons(recGrid);
+          Eventify.bindFavoriteButtons(recGrid);
+        } else {
+          recGrid.innerHTML = '<p class="empty-state">Explore more events to get personalized recommendations!</p>';
+        }
+      }
+
+      const stats = await EventifyDB.getPublicStats();
+      const statCards = document.querySelectorAll('#stats-section-grid > div');
+      statCards[0].querySelector('.stat-value').textContent = stats.events;
+      statCards[1].querySelector('.stat-value').textContent = stats.users;
+      statCards[2].querySelector('.stat-value').textContent = stats.upcoming;
+    });
+  </script>
+</body>
+</html>

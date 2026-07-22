@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="index.html#categories">Categories</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>Find Public Events</h1>
+      <p>Search open events you can join — by name, place, or category</p>
+    </div>
+  </div>
+
+  <section class="events-section">
+    <div class="container">
+      <form class="discover-search" id="discover-search" autocomplete="off" role="search">
+        <div class="discover-search-main">
+          <div class="discover-search-field">
+            <label for="search-input">What are you looking for?</label>
+            <input type="text" id="search-input" name="search" placeholder="Concert, workshop, wedding fair…" autocomplete="off">
+          </div>
+          <div class="discover-search-field">
+            <label for="location-filter">Where?</label>
+            <input type="text" id="location-filter" name="location" placeholder="City, venue, or area" autocomplete="off">
+          </div>
+          <div class="discover-search-field">
+            <label for="category-filter">Category</label>
+            <select id="category-filter">
+              <option value="all">All Categories</option>
+            </select>
+          </div>
+        </div>
+        <div class="discover-search-actions discover-search-dates">
+          <div class="discover-search-field">
+            <label for="date-from">From date</label>
+            <input type="date" id="date-from">
+          </div>
+          <div class="discover-search-field">
+            <label for="date-to">To date</label>
+            <input type="date" id="date-to">
+          </div>
+          <label class="discover-upcoming">
+            <input type="checkbox" id="show-map">
+            <span>Map view</span>
+          </label>
+        </div>
+        <div class="discover-search-actions">
+          <div class="discover-search-field">
+            <label for="sort-filter">Sort by</label>
+            <select id="sort-filter">
+              <option value="date_asc">Date (Earliest)</option>
+              <option value="date_desc">Date (Latest)</option>
+              <option value="title_asc">Title (A-Z)</option>
+              <option value="price_asc">Price (Low to High)</option>
+              <option value="price_desc">Price (High to Low)</option>
+              <option value="popular">Most popular</option>
+            </select>
+          </div>
+          <label class="discover-upcoming">
+            <input type="checkbox" id="upcoming-only" checked>
+            <span>Upcoming only</span>
+          </label>
+          <button type="submit" class="btn btn-primary" id="btn-find-events">Find events</button>
+          <button type="button" class="btn btn-outline" id="btn-clear-search">Clear</button>
+        </div>
+        <p class="discover-hint">Only <strong>public</strong> events are shown here. Private and invite-only stay hidden.</p>
+      </form>
+
+      <p class="search-results-count" id="search-results-count" aria-live="polite"></p>
+      <div id="events-map" class="events-map hidden"></div>
+
+      <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+        <p>Searching public events...</p>
+      </div>
+
+      <div id="empty-state" class="empty-state hidden">
+        <h3>No public events found</h3>
+        <p>Try another keyword, city, or category — or clear filters to browse all upcoming public events.</p>
+      </div>
+
+      <div class="events-grid" id="events-grid"></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 Eventify. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/categories.js?v=8"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script src="js/search.js?v=3"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      const params = new URLSearchParams(window.location.search);
+      const catSelect = document.getElementById('category-filter');
+      catSelect.innerHTML = renderCategoryFilterOptions(params.get('category') || 'all');
+      if (params.get('search')) document.getElementById('search-input').value = params.get('search');
+      if (params.get('location')) document.getElementById('location-filter').value = params.get('location');
+      if (params.get('upcoming') === '0') document.getElementById('upcoming-only').checked = false;
+
+      document.getElementById('discover-search')?.addEventListener('submit', (e) => {
+        e.preventDefault();
+        document.getElementById('btn-find-events')?.click();
+      });
+
+      Search.init({ openDirect: true });
+    });
+  </script>
+</body>
+</html>

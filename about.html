@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=36">
+  <link rel="stylesheet" href="css/responsive.css?v=5">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <link rel="apple-touch-icon" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links">
+        <a href="index.html">Home</a>
+        <a href="events.html">Events</a>
+        <a href="index.html#categories">Categories</a>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <div class="page-header">
+    <div class="container">
+      <h1>About Eventify</h1>
+      <p>Connecting people through unforgettable experiences</p>
+    </div>
+  </div>
+
+  <section class="events-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>Our Story</h2>
+        <p>Why we built Eventify</p>
+      </div>
+      <p style="max-width: 760px; margin: 0 auto 24px; color: var(--text-light); font-size: 1.05rem; line-height: 1.8; text-align: center;">
+        Eventify started with a simple idea: finding and organizing great events should be effortless.
+        Whether you're planning a wedding, hosting a conference, or looking for the next concert to attend,
+        Eventify brings organizers and attendees together on one modern, easy-to-use platform.
+      </p>
+      <p style="max-width: 760px; margin: 0 auto; color: var(--text-light); font-size: 1.05rem; line-height: 1.8; text-align: center;">
+        Today, thousands of organizers use Eventify to create, promote, and manage events of every size,
+        while attendees discover new experiences, RSVP in seconds, and keep track of everything they love in one place.
+      </p>
+    </div>
+  </section>
+
+  <section class="events-section" style="background: var(--card); padding-top: 0;">
+    <div class="container">
+      <div class="section-title">
+        <h2>What We Stand For</h2>
+        <p>The values that guide everything we build</p>
+      </div>
+      <div class="category-grid">
+        <div class="category-card" style="cursor: default;">
+          <div class="category-icon">🤝</div>
+          <h4>Community First</h4>
+          <span>Bringing people together</span>
+        </div>
+        <div class="category-card" style="cursor: default;">
+          <div class="category-icon">🚀</div>
+          <h4>Simplicity</h4>
+          <span>Effortless event planning</span>
+        </div>
+        <div class="category-card" style="cursor: default;">
+          <div class="category-icon">🔒</div>
+          <h4>Trust & Safety</h4>
+          <span>Secure by design</span>
+        </div>
+        <div class="category-card" style="cursor: default;">
+          <div class="category-icon">💡</div>
+          <h4>Innovation</h4>
+          <span>Always improving</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stats-section">
+    <div class="container">
+      <div class="stats-section-grid" id="about-stats-grid">
+        <div>
+          <div class="stat-value">—</div>
+          <div class="stat-label">Total Events</div>
+        </div>
+        <div>
+          <div class="stat-value">—</div>
+          <div class="stat-label">Total Users</div>
+        </div>
+        <div>
+          <div class="stat-value">—</div>
+          <div class="stat-label">Upcoming Events</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="events-section" style="text-align: center;">
+    <div class="container">
+      <h2 style="margin-bottom: 16px;">Ready to get started?</h2>
+      <p style="color: var(--text-light); margin-bottom: 32px;">Join Eventify today and start discovering or creating amazing events.</p>
+      <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+        <a href="register.html" class="btn btn-primary btn-lg">Sign Up Free</a>
+        <a href="events.html" class="btn btn-secondary btn-lg">Browse Events</a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom"><p>&copy; 2026 Eventify. All rights reserved.</p></div>
+    </div>
+  </footer>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/api.js?v=8"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=8"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      const stats = await EventifyDB.getPublicStats();
+      const statCards = document.querySelectorAll('#about-stats-grid > div');
+      statCards[0].querySelector('.stat-value').textContent = stats.events;
+      statCards[1].querySelector('.stat-value').textContent = stats.users;
+      statCards[2].querySelector('.stat-value').textContent = stats.upcoming;
+    });
+  </script>
+</body>
+</html>
