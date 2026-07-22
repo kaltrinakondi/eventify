@@ -604,13 +604,13 @@ h4 { font-size: 1.25rem; }
   margin: 0 auto;
   display: flex;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--card);
   padding: 8px;
   border-radius: 18px;
   box-shadow: 0 18px 40px rgba(15, 45, 42, 0.2);
   position: relative;
   z-index: 5;
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid var(--border);
 }
 
 .hero-search-field {
@@ -791,7 +791,7 @@ h4 { font-size: 1.25rem; }
 }
 
 .discover-search {
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--card);
   border: 1px solid rgba(var(--primary-rgb), 0.12);
   border-radius: 20px;
   padding: 22px;
@@ -837,7 +837,7 @@ h4 { font-size: 1.25rem; }
   border-radius: 12px;
   font-family: inherit;
   font-size: 0.95rem;
-  background: #fff;
+  background: var(--background);
   color: var(--text);
   outline: none;
 }
@@ -1954,7 +1954,7 @@ h4 { font-size: 1.25rem; }
 }
 
 .testimonial-card {
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--card);
   border-radius: var(--radius);
   padding: 32px;
   box-shadow: var(--shadow);
@@ -2456,20 +2456,20 @@ h4 { font-size: 1.25rem; }
 }
 
 .planner-actions .btn-copy-link {
-  background: #fff;
+  background: var(--card);
   border: 1px solid rgba(15, 118, 110, 0.28);
-  color: #0f766e;
+  color: var(--primary);
 }
 
 .planner-actions .btn-whos-coming {
-  background: #fff;
+  background: var(--card);
   border: 1px solid rgba(var(--primary-rgb), 0.28);
-  color: #4338ca;
+  color: var(--primary);
 }
 
 .planner-actions .btn-planner.btn-outline {
-  background: #fff;
-  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: var(--card);
+  border: 1px solid var(--border);
   color: var(--text);
 }
 
@@ -3204,15 +3204,16 @@ h4 { font-size: 1.25rem; }
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 14px;
-  background: #f8fafc;
+  background: var(--background);
 }
 
 .chat-msg {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px 12px;
   margin-bottom: 10px;
+  color: var(--text);
 }
 
 .chat-msg .chat-time {
@@ -3837,11 +3838,12 @@ h4 { font-size: 1.25rem; }
   display: grid;
   grid-template-columns: minmax(0, 280px) 1fr;
   gap: 0;
-  background: #fff;
+  background: var(--card);
   border-radius: var(--radius);
   overflow: hidden;
   border: 1px solid var(--border);
   box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06);
+  color: var(--text);
 }
 
 .invite-hero-card img {
@@ -3896,11 +3898,12 @@ h4 { font-size: 1.25rem; }
 }
 
 .invite-card-panel {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 22px 24px;
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
+  color: var(--text);
 }
 
 .invite-card-panel h2 {
@@ -4393,4 +4396,115 @@ html[data-theme="dark"] .help-chat-form input::placeholder {
 
 html[data-theme="dark"] .help-chat-form .btn {
   color: #042f2e;
+}
+
+/* Dark mode: kill leftover white panels + force readable text */
+html[data-theme="dark"] .form-card,
+html[data-theme="dark"] .form-card.wide,
+html[data-theme="dark"] .sidebar-card,
+html[data-theme="dark"] .planner-card,
+html[data-theme="dark"] .invite-card-panel,
+html[data-theme="dark"] .invite-hero-card,
+html[data-theme="dark"] .invite-card,
+html[data-theme="dark"] .cert-card,
+html[data-theme="dark"] .chat-msg,
+html[data-theme="dark"] .chat-log,
+html[data-theme="dark"] .discover-search,
+html[data-theme="dark"] .hero-search,
+html[data-theme="dark"] .testimonial-card,
+html[data-theme="dark"] .stat-card,
+html[data-theme="dark"] .event-card,
+html[data-theme="dark"] .organizer-card,
+html[data-theme="dark"] .empty-state,
+html[data-theme="dark"] .share-link-box,
+html[data-theme="dark"] .ai-box,
+html[data-theme="dark"] .budget-summary,
+html[data-theme="dark"] .guest-toolbar,
+html[data-theme="dark"] .optional-guest-panel,
+html[data-theme="dark"] .events-section,
+html[data-theme="dark"] .settings-card,
+html[data-theme="dark"] .modal-content,
+html[data-theme="dark"] .notif-panel,
+html[data-theme="dark"] .planner-actions .btn-planner.btn-outline,
+html[data-theme="dark"] .planner-actions .btn-copy-link,
+html[data-theme="dark"] .planner-actions .btn-whos-coming {
+  background: #1a2523 !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .form-card h1,
+html[data-theme="dark"] .form-card h2,
+html[data-theme="dark"] .form-card h3,
+html[data-theme="dark"] .planner-card h3,
+html[data-theme="dark"] .sidebar-card h3,
+html[data-theme="dark"] .invite-card-panel h2,
+html[data-theme="dark"] .invite-hero-copy h1,
+html[data-theme="dark"] .testimonial-author h5,
+html[data-theme="dark"] .event-card-body h3,
+html[data-theme="dark"] .stat-value,
+html[data-theme="dark"] .form-group label,
+html[data-theme="dark"] .discover-search-field label {
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] .card-desc,
+html[data-theme="dark"] .subtitle,
+html[data-theme="dark"] .muted,
+html[data-theme="dark"] .stat-label,
+html[data-theme="dark"] .testimonial-text,
+html[data-theme="dark"] .event-meta,
+html[data-theme="dark"] .section-subtitle {
+  color: #a7b8b3 !important;
+}
+
+html[data-theme="dark"] .category-card {
+  background: #1a2523 !important;
+  border-color: #2f403c !important;
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] .category-card h4,
+html[data-theme="dark"] .category-card span,
+html[data-theme="dark"] .category-card p {
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] .category-card--music h4,
+html[data-theme="dark"] .category-card--private h4 {
+  color: #fff !important;
+}
+
+html[data-theme="dark"] .calendar-day {
+  background: #15211f;
+  color: #eef4f2;
+  border-color: #2f403c;
+}
+
+html[data-theme="dark"] .calendar-day.other-month {
+  color: #6b807a;
+}
+
+html[data-theme="dark"] .calendar-nav button,
+html[data-theme="dark"] .tab-btn,
+html[data-theme="dark"] .dash-nav {
+  color: #c5d4cf;
+}
+
+html[data-theme="dark"] .user-menu-trigger {
+  background: #1a2523 !important;
+}
+
+html[data-theme="dark"] .user-menu-name,
+html[data-theme="dark"] .nav-links a {
+  color: #c5d4cf;
+}
+
+html[data-theme="dark"] .btn-primary,
+html[data-theme="dark"] .btn-secondary {
+  color: #042f2e !important;
+}
+
+html[data-theme="dark"] strong {
+  color: #f3faf8;
 }
