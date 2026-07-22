@@ -1,4 +1,32 @@
-const PUBLIC_PAGES = ['login.html', 'register.html', 'forgot-password.html', 'reset-password.html', 'invite.html', 'organizer.html'];
+const PUBLIC_PAGES = [
+  'index.html', 'login.html', 'register.html', 'forgot-password.html', 'reset-password.html',
+  'invite.html', 'organizer.html', 'events.html', 'event.html', 'about.html', 'contact.html', 'calendar.html',
+];
+
+function normalizePageName(name) {
+  name = (name || '').split('?')[0].split('#')[0];
+  if (!name || name === '/') return 'index.html';
+  if (!name.includes('.')) name += '.html';
+  return name;
+}
+
+function safeAuthRedirect(raw) {
+  if (!raw) return 'index.html';
+  try { raw = decodeURIComponent(String(raw)); } catch { /* keep */ }
+  raw = String(raw).replace(/^\/+/, '');
+  const onlyPage = normalizePageName(raw.split('?')[0]);
+  if (
+    onlyPage === 'login.html' ||
+    onlyPage === 'register.html' ||
+    onlyPage === 'forgot-password.html' ||
+    /^https?:/i.test(raw) ||
+    raw.includes('redirect=')
+  ) {
+    return 'index.html';
+  }
+  return raw;
+}
+
 
 const Eventify = {
   currentUser: null,
@@ -101,17 +129,17 @@ const Eventify = {
   },
 
   enforceAuthGate() {
-    const page = window.location.pathname.split('/').pop() || 'index.html';
+    const page = normalizePageName(window.location.pathname.split('/').pop());
 
     if (!this.currentUser && !PUBLIC_PAGES.includes(page)) {
-      const target = page + window.location.search;
+      const target = safeAuthRedirect(page + window.location.search);
       window.location.href = `login.html?redirect=${encodeURIComponent(target)}`;
       return false;
     }
 
     if (this.currentUser && (page === 'login.html' || page === 'register.html')) {
       const params = new URLSearchParams(window.location.search);
-      window.location.href = params.get('redirect') || 'index.html';
+      window.location.href = safeAuthRedirect(params.get('redirect') || 'index.html');
       return false;
     }
 
@@ -130,7 +158,7 @@ const Eventify = {
     const linksContainer = document.getElementById('nav-links');
     const authContainer = document.getElementById('nav-auth');
     const isLoggedIn = !!this.currentUser;
-    const page = window.location.pathname.split('/').pop() || 'index.html';
+    const page = normalizePageName(window.location.pathname.split('/').pop());
     const isAuthPage = PUBLIC_PAGES.includes(page);
 
     if (linksContainer) {
@@ -431,7 +459,7 @@ const Eventify = {
   },
 
   highlightActiveNav() {
-    const page = window.location.pathname.split('/').pop() || 'index.html';
+    const page = normalizePageName(window.location.pathname.split('/').pop());
     document.querySelectorAll('.nav-links a').forEach(link => {
       const href = link.getAttribute('href').split('#')[0];
       link.classList.toggle('active', href === page);
@@ -447,7 +475,8 @@ const Eventify = {
 
   requireAuth(redirectUrl) {
     if (!this.currentUser) {
-      window.location.href = `login.html?redirect=${encodeURIComponent(redirectUrl || window.location.pathname)}`;
+      const target = safeAuthRedirect(redirectUrl || normalizePageName(window.location.pathname.split('/').pop()));
+      window.location.href = `login.html?redirect=${encodeURIComponent(target)}`;
       return false;
     }
     return true;

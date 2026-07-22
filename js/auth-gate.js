@@ -2,16 +2,45 @@
 // so unauthenticated visitors never briefly see protected pages.
 (function () {
   var PUBLIC = {
+    'index.html': true,
     'login.html': true,
     'register.html': true,
     'forgot-password.html': true,
     'reset-password.html': true,
     'invite.html': true,
     'organizer.html': true,
+    'events.html': true,
+    'event.html': true,
+    'about.html': true,
+    'contact.html': true,
+    'calendar.html': true,
   };
 
-  var page = (location.pathname.split('/').pop() || 'index.html').split('?')[0];
-  if (!page || page === '') page = 'index.html';
+  function normalizePage(name) {
+    name = (name || '').split('?')[0].split('#')[0];
+    if (!name || name === '/' || name === '') return 'index.html';
+    if (name.indexOf('.') === -1) name += '.html';
+    return name;
+  }
+
+  function safeRedirectTarget(raw) {
+    if (!raw) return 'index.html';
+    try { raw = decodeURIComponent(String(raw)); } catch (e) { /* keep raw */ }
+    raw = String(raw).replace(/^\/+/, '');
+    var onlyPage = normalizePage(raw.split('?')[0].split('#')[0]);
+    if (
+      onlyPage === 'login.html' ||
+      onlyPage === 'register.html' ||
+      onlyPage === 'forgot-password.html' ||
+      /^https?:/i.test(raw) ||
+      raw.indexOf('redirect=') !== -1
+    ) {
+      return 'index.html';
+    }
+    return raw;
+  }
+
+  var page = normalizePage(location.pathname.split('/').pop());
 
   function hasSupabaseSession() {
     try {
@@ -33,13 +62,13 @@
   var loggedIn = hasSupabaseSession();
 
   if (!loggedIn && !PUBLIC[page]) {
-    var target = page + location.search + location.hash;
+    var target = safeRedirectTarget(page + location.search + location.hash);
     location.replace('login.html?redirect=' + encodeURIComponent(target));
     return;
   }
 
   if (loggedIn && (page === 'login.html' || page === 'register.html')) {
     var params = new URLSearchParams(location.search);
-    location.replace(params.get('redirect') || 'index.html');
+    location.replace(safeRedirectTarget(params.get('redirect') || 'index.html'));
   }
 })();
