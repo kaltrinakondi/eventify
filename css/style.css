@@ -3819,7 +3819,8 @@ h4 { font-size: 1.25rem; }
 
 .whos-tab {
   border: 1px solid var(--border);
-  background: #fff;
+  background: var(--card);
+  color: var(--text);
   border-radius: 999px;
   padding: 6px 12px;
   font: inherit;
@@ -3829,9 +3830,9 @@ h4 { font-size: 1.25rem; }
 }
 
 .whos-tab.active {
-  background: rgba(15, 118, 110, 0.12);
-  border-color: #0f766e;
-  color: #0f766e;
+  background: rgba(var(--primary-rgb), 0.14);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .whos-coming-body {
@@ -4665,4 +4666,26 @@ html[data-theme="dark"] .ai-quick-asks button {
   background: #1a2523 !important;
   color: #eef4f2 !important;
   border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .whos-tab {
+  background: #15211f !important;
+  color: #eef4f2 !important;
+  border-color: #3a4f4a !important;
+}
+
+html[data-theme="dark"] .whos-tab.active {
+  background: rgba(45, 212, 191, 0.16) !important;
+  border-color: #2dd4bf !important;
+  color: #99f6e4 !important;
+}
+
+html[data-theme="dark"] .whos-coming-panel {
+  background: #1a2523 !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .note-chip-hint {
+  color: #a7b8b3 !important;
 }
