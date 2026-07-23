@@ -4813,3 +4813,77 @@ html[data-theme="dark"] .planner-panel option {
   background: #15211f;
   color: #eef4f2;
 }
+
+/* Menu + Playlist tabs — dark readable fields */
+html[data-theme="dark"] #tab-menu .planner-card,
+html[data-theme="dark"] #tab-playlist .planner-card,
+html[data-theme="dark"] #tab-menu .dynamic-row,
+html[data-theme="dark"] #tab-playlist .dynamic-row,
+html[data-theme="dark"] #tab-menu .list-toolbar,
+html[data-theme="dark"] #tab-playlist .list-toolbar,
+html[data-theme="dark"] #tab-menu .empty-state,
+html[data-theme="dark"] #tab-playlist .empty-state {
+  background: #15211f !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] #tab-menu input,
+html[data-theme="dark"] #tab-menu select,
+html[data-theme="dark"] #tab-menu textarea,
+html[data-theme="dark"] #tab-playlist input,
+html[data-theme="dark"] #tab-playlist select,
+html[data-theme="dark"] #tab-playlist textarea,
+html[data-theme="dark"] #menu-list input,
+html[data-theme="dark"] #menu-list select,
+html[data-theme="dark"] #playlist-list input,
+html[data-theme="dark"] #playlist-list select {
+  background: #0f1716 !important;
+  color: #f3faf8 !important;
+  border: 1px solid #3a4f4a !important;
+  color-scheme: dark;
+  -webkit-text-fill-color: #f3faf8 !important;
+}
+
+html[data-theme="dark"] #tab-menu input::placeholder,
+html[data-theme="dark"] #tab-playlist input::placeholder,
+html[data-theme="dark"] #menu-list input::placeholder,
+html[data-theme="dark"] #playlist-list input::placeholder {
+  color: #8aa39c !important;
+  -webkit-text-fill-color: #8aa39c !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] #tab-menu h3,
+html[data-theme="dark"] #tab-playlist h3,
+html[data-theme="dark"] #tab-menu .card-desc,
+html[data-theme="dark"] #tab-playlist .card-desc,
+html[data-theme="dark"] #tab-menu label,
+html[data-theme="dark"] #tab-playlist label {
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] #tab-menu .card-desc,
+html[data-theme="dark"] #tab-playlist .card-desc {
+  color: #a7b8b3 !important;
+}
+
+html[data-theme="dark"] #tab-menu option,
+html[data-theme="dark"] #tab-playlist option {
+  background: #15211f;
+  color: #eef4f2;
+}
+
+html[data-theme="dark"] #tab-menu .btn-secondary,
+html[data-theme="dark"] #tab-playlist .btn-secondary,
+html[data-theme="dark"] #add-menu-item,
+html[data-theme="dark"] #add-track {
+  background: #243330 !important;
+  color: #eef4f2 !important;
+  border-color: #3a4f4a !important;
+}
+
+html[data-theme="dark"] #tab-menu .icon-btn,
+html[data-theme="dark"] #tab-playlist .icon-btn {
+  color: #f87171 !important;
+}
