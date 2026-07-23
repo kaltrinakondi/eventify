@@ -1,15 +1,9 @@
-const CACHE = 'eventify-v3';
+const CACHE = 'eventify-v5';
 const ASSETS = [
   './',
   './index.html',
   './events.html',
   './login.html',
-  './css/style.css',
-  './css/responsive.css',
-  './js/app.js',
-  './js/auth-gate.js',
-  './js/i18n.js',
-  './js/theme.js',
   './manifest.webmanifest',
   './images/app-icon.png',
   './images/icon-512.png',
@@ -29,8 +23,13 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  // Always network-first for HTML/JS so auth fixes deploy immediately
-  if (url.pathname.endsWith('.html') || url.pathname.endsWith('.js') || url.pathname.endsWith('/')) {
+  // Network-first for HTML/JS/CSS so deploys (auth, dark mode, favorites) apply immediately
+  if (
+    url.pathname.endsWith('.html') ||
+    url.pathname.endsWith('.js') ||
+    url.pathname.endsWith('.css') ||
+    url.pathname.endsWith('/')
+  ) {
     event.respondWith(
       fetch(req).then((res) => {
         const copy = res.clone();

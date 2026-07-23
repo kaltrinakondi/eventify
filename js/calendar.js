@@ -114,6 +114,7 @@ const Calendar = {
       <div class="events-grid">${events.map(e => Eventify.renderEventCard(e)).join('')}</div>
     `;
     Eventify.bindRsvpButtons(this.eventsContainer);
+    Eventify.bindFavoriteButtons(this.eventsContainer);
   },
 };
 

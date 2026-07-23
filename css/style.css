@@ -4763,6 +4763,7 @@ html[data-theme="dark"] #total_budget {
   color: #f3faf8 !important;
   border: 1px solid #3a4f4a !important;
   color-scheme: dark;
+  -webkit-text-fill-color: #f3faf8 !important;
 }
 
 html[data-theme="dark"] .planner-panel input::placeholder,
@@ -4770,6 +4771,7 @@ html[data-theme="dark"] .planner-panel textarea::placeholder,
 html[data-theme="dark"] .planner-panel .kanban-compose-input::placeholder,
 html[data-theme="dark"] #board-new-title::placeholder {
   color: #8aa39c !important;
+  -webkit-text-fill-color: #8aa39c !important;
   opacity: 1 !important;
 }
 

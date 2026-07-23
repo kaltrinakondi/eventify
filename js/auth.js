@@ -22,7 +22,10 @@ const Auth = {
         const data = await this.login(form.email.value.trim(), form.password.value);
         if (data.success && data.user) {
           const params = new URLSearchParams(window.location.search);
-          window.location.href = params.get('redirect') || 'index.html';
+          const target = typeof safeAuthRedirect === 'function'
+            ? safeAuthRedirect(params.get('redirect') || 'index.html')
+            : (params.get('redirect') || 'index.html');
+          window.location.href = target;
         } else {
           alert.className = 'alert alert-error';
           alert.textContent = data.message === 'Email not confirmed'
@@ -59,7 +62,10 @@ const Auth = {
         alert.classList.remove('hidden');
         if (data.success && data.user) {
           const params = new URLSearchParams(window.location.search);
-          setTimeout(() => { window.location.href = params.get('redirect') || 'index.html'; }, 1500);
+          const target = typeof safeAuthRedirect === 'function'
+            ? safeAuthRedirect(params.get('redirect') || 'index.html')
+            : (params.get('redirect') || 'index.html');
+          setTimeout(() => { window.location.href = target; }, 1500);
         }
       } catch (err) {
         alert.className = 'alert alert-error';

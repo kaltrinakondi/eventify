@@ -1,120 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edit Event - Eventify</title>
-    <link rel="stylesheet" href="css/style.css?v=49">
-    <link rel="stylesheet" href="css/responsive.css?v=7">
-  <script src="js/theme.js"></script>
-  <script src="js/auth-gate.js?v=3"></script>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" href="images/app-icon.png">
-  <link rel="apple-touch-icon" href="images/app-icon.png">
-  <meta name="theme-color" content="#4b245d">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Event - Eventify</title>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var id = params.get('id') || params.get('edit');
+      location.replace(id ? ('create-event.html?edit=' + encodeURIComponent(id)) : 'create-event.html');
+    })();
+  </script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="container">
-            <a href="index.html" class="logo">Event<span>ify</span></a>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="events.html">Events</a></li>
-                <li><a href="calendar.html">Calendar</a></li>
-                <li><a href="create-event.html">Create Event</a></li>
-                <li><a href="contact.html">Contact</a></li>
-            </ul>
-            <div class="nav-auth" id="nav-auth">
-              <a href="login.html" class="btn btn-sm btn-outline">Sign In</a>
-              <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
-            </div>
-            <div class="hamburger"><span></span><span></span><span></span></div>
-        </div>
-    </nav>
-
-    <div class="form-page">
-        <div class="form-card wide" id="edit-form-container">
-            <div class="loading"><div class="spinner"></div></div>
-        </div>
-    </div>
-
-    <script src="js/i18n.js"></script>
-  <script src="js/features.js"></script>
-  <script src="js/app.js?v=11"></script>
-    <script src="js/auth.js"></script>
-    <script>
-        async function loadEditForm() {
-            await checkSession();
-            if (!currentUser) {
-                showToast('Please login first', 'error');
-                setTimeout(() => window.location.href = 'login.html', 1500);
-                return;
-            }
-
-            const id = new URLSearchParams(window.location.search).get('id');
-            if (!id) { window.location.href = 'my-events.html'; return; }
-
-            const res = await fetch(`/api/events?id=${id}`, { credentials: 'same-origin' });
-            const data = await res.json();
-            if (!data.success) { window.location.href = 'my-events.html'; return; }
-
-            const e = data.event;
-            if (e.organizer_id != currentUser.id && currentUser.role !== 'admin') {
-                showToast('Not authorized', 'error');
-                setTimeout(() => window.location.href = 'my-events.html', 1500);
-                return;
-            }
-
-            document.getElementById('edit-form-container').innerHTML = `
-                <h2>Edit Event</h2>
-                <p class="subtitle">Update your event details</p>
-                <form id="edit-event-form" enctype="multipart/form-data">
-                    <div class="form-group">
-                        <label for="title">Event Title</label>
-                        <input type="text" id="title" name="title" required value="${e.title}">
-                    </div>
-                    <div class="form-group">
-                        <label for="description">Description</label>
-                        <textarea id="description" name="description" required>${e.description}</textarea>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="category">Category</label>
-                            <select id="category" name="category" required>
-                                ${['Technology','Music','Business','Art','Sports','Food'].map(c =>
-                                    `<option value="${c}" ${c===e.category?'selected':''}>${c}</option>`
-                                ).join('')}
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="price">Ticket Price ($)</label>
-                            <input type="number" id="price" name="price" min="0" step="0.01" value="${e.price}">
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="date">Date</label>
-                            <input type="date" id="date" name="date" required value="${e.date}">
-                        </div>
-                        <div class="form-group">
-                            <label for="time">Time</label>
-                            <input type="time" id="time" name="time" required value="${e.time.substring(0,5)}">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="location">Location</label>
-                        <input type="text" id="location" name="location" required value="${e.location}">
-                    </div>
-                    <div class="form-group">
-                        <label for="image">Update Image (optional)</label>
-                        <input type="file" id="image" name="image" accept="image/*">
-                    </div>
-                    <button type="submit" class="btn btn-primary btn-lg">Update Event</button>
-                </form>
-            `;
-            document.getElementById('edit-event-form').addEventListener('submit', handleUpdateEvent);
-        }
-        document.addEventListener('DOMContentLoaded', loadEditForm);
-    </script>
+  <p>Redirecting to the event planner…</p>
 </body>
 </html>

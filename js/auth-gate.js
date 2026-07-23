@@ -51,11 +51,9 @@
   var page = normalizePage(location.pathname.split('/').pop());
 
   // Never bounce auth pages — prevents /login ↔ login.html redirect loops
+  // Do not auto-redirect away from login/register here: a stale auth-token
+  // without a profiles row would loop forever. app.js handles post-login redirect.
   if (isAuthFormPage(page)) {
-    if (hasSession() && (page === 'login.html' || page === 'register.html')) {
-      var params = new URLSearchParams(location.search);
-      location.replace(safeRedirectTarget(params.get('redirect') || 'index.html'));
-    }
     return;
   }
 

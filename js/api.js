@@ -21,11 +21,37 @@ const EventifyDB = {
     return data;
   },
 
+  async ensureProfile(user) {
+    if (!user?.id) return null;
+    let profile = await this.getProfile(user.id);
+    if (profile) return profile;
+
+    const name = user.user_metadata?.name
+      || (user.email ? String(user.email).split('@')[0] : 'User');
+    const { data, error } = await sb
+      .from('profiles')
+      .upsert({
+        id: user.id,
+        name,
+        email: user.email || '',
+        role: 'user',
+      }, { onConflict: 'id' })
+      .select('id, name, email, bio, phone, avatar_url, role, created_at')
+      .single();
+
+    if (error) return null;
+    return data;
+  },
+
   async getSessionUser() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.user) return null;
-    const profile = await this.getProfile(session.user.id);
-    if (!profile) return null;
+    const profile = await this.ensureProfile(session.user);
+    if (!profile) {
+      // Broken session (token present, no profile / no insert policy) — clear to avoid login loops
+      await sb.auth.signOut();
+      return null;
+    }
     return { ...profile, email: session.user.email };
   },
 
@@ -147,10 +173,11 @@ const EventifyDB = {
         };
       }
 
+      const eid = Number(params.id) || params.id;
       const { data: reviews } = await sb
         .from('reviews')
         .select('id, rating, comment, created_at, profiles(name)')
-        .eq('event_id', params.id)
+        .eq('event_id', eid)
         .order('created_at', { ascending: false });
 
       let userRsvp = null;
@@ -159,7 +186,7 @@ const EventifyDB = {
         const { data: rsvp } = await sb
           .from('rsvps')
           .select('status')
-          .eq('event_id', params.id)
+          .eq('event_id', eid)
           .eq('user_id', params.userId)
           .maybeSingle();
         userRsvp = rsvp?.status || null;
@@ -167,7 +194,7 @@ const EventifyDB = {
         const { data: fav } = await sb
           .from('favorites')
           .select('id')
-          .eq('event_id', params.id)
+          .eq('event_id', eid)
           .eq('user_id', params.userId)
           .maybeSingle();
         isFavorite = !!fav;
@@ -231,18 +258,21 @@ const EventifyDB = {
 
     let favoriteIds = new Set();
     if (params.userId && data?.length) {
-      const ids = data.map(e => e.id);
+      const ids = data.map(e => Number(e.id)).filter(Number.isFinite);
       const { data: favs } = await sb
         .from('favorites')
         .select('event_id')
         .eq('user_id', params.userId)
         .in('event_id', ids);
-      favoriteIds = new Set((favs || []).map(f => f.event_id));
+      favoriteIds = new Set((favs || []).map(f => Number(f.event_id)));
     }
 
     return {
       success: true,
-      events: (data || []).map(e => ({ ...this.mapEvent(e), isFavorite: favoriteIds.has(e.id) })),
+      events: (data || []).map(e => ({
+        ...this.mapEvent(e),
+        isFavorite: favoriteIds.has(Number(e.id)),
+      })),
     };
   },
 
@@ -365,14 +395,22 @@ const EventifyDB = {
   },
 
   async deleteEvent(id) {
-    const { error } = await sb.from('events').delete().eq('id', id);
+    const eid = Number(id);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event.' };
+    }
+    const { error } = await sb.from('events').delete().eq('id', eid);
     if (error) return { success: false, message: error.message };
     return { success: true, message: 'Event deleted.' };
   },
 
   async setRsvp(eventId, userId, status) {
+    const eid = Number(eventId);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event.' };
+    }
     const { error } = await sb.from('rsvps').upsert(
-      { user_id: userId, event_id: eventId, status },
+      { user_id: userId, event_id: eid, status },
       { onConflict: 'user_id,event_id' }
     );
     if (error) return { success: false, message: error.message };
@@ -381,19 +419,41 @@ const EventifyDB = {
   },
 
   async toggleFavorite(eventId, userId) {
-    const { data: existing } = await sb
+    const eid = Number(eventId);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event.' };
+    }
+
+    // Prefer live auth uid so RLS (auth.uid() = user_id) always matches.
+    const { data: authData, error: authErr } = await sb.auth.getUser();
+    if (authErr || !authData?.user) {
+      return { success: false, message: 'Please log in to save favorites.' };
+    }
+    const uid = authData.user.id || userId;
+
+    const { data: existing, error: findErr } = await sb
       .from('favorites')
       .select('id')
-      .eq('user_id', userId)
-      .eq('event_id', eventId)
+      .eq('user_id', uid)
+      .eq('event_id', eid)
       .maybeSingle();
 
+    if (findErr) return { success: false, message: findErr.message };
+
     if (existing) {
-      await sb.from('favorites').delete().eq('id', existing.id);
+      const { error } = await sb.from('favorites').delete().eq('id', existing.id);
+      if (error) return { success: false, message: error.message };
       return { success: true, favorited: false, message: 'Removed from favorites' };
     }
-    const { error } = await sb.from('favorites').insert({ user_id: userId, event_id: eventId });
-    if (error) return { success: false, message: error.message };
+
+    const { error } = await sb.from('favorites').insert({ user_id: uid, event_id: eid });
+    if (error) {
+      // Race: already favorited
+      if (error.code === '23505') {
+        return { success: true, favorited: true, message: 'Added to favorites!' };
+      }
+      return { success: false, message: error.message };
+    }
     return { success: true, favorited: true, message: 'Added to favorites!' };
   },
 
@@ -415,12 +475,25 @@ const EventifyDB = {
       .neq('status', 'not_going');
     if (error) return { success: false, events: [] };
     if (!rows?.length) return { success: true, events: [] };
-    const ids = rows.map(r => r.event_id);
-    const statusMap = Object.fromEntries(rows.map(r => [r.event_id, r.status]));
+    const ids = rows.map(r => Number(r.event_id)).filter(Number.isFinite);
+    const statusMap = Object.fromEntries(rows.map(r => [Number(r.event_id), r.status]));
     const { data: events } = await sb.from('events_with_stats').select('*').in('id', ids);
+
+    let favoriteIds = new Set();
+    const { data: favs } = await sb
+      .from('favorites')
+      .select('event_id')
+      .eq('user_id', userId)
+      .in('event_id', ids);
+    favoriteIds = new Set((favs || []).map(f => Number(f.event_id)));
+
     return {
       success: true,
-      events: (events || []).map(e => ({ ...this.mapEvent(e), rsvp_status: statusMap[e.id] })),
+      events: (events || []).map(e => ({
+        ...this.mapEvent(e),
+        rsvp_status: statusMap[Number(e.id)],
+        isFavorite: favoriteIds.has(Number(e.id)),
+      })),
     };
   },
 
@@ -429,10 +502,17 @@ const EventifyDB = {
       .from('favorites')
       .select('event_id')
       .eq('user_id', userId);
-    if (error) return { success: false, events: [] };
+    if (error) return { success: false, message: error.message, events: [] };
     if (!rows?.length) return { success: true, events: [] };
-    const ids = rows.map(r => r.event_id);
-    const { data: events } = await sb.from('events_with_stats').select('*').in('id', ids);
+    const ids = rows.map(r => Number(r.event_id)).filter(Number.isFinite);
+    let { data: events, error: evErr } = await sb
+      .from('events_with_stats')
+      .select('*')
+      .in('id', ids);
+    if (evErr || !events) {
+      ({ data: events, error: evErr } = await sb.from('events').select('*').in('id', ids));
+    }
+    if (evErr) return { success: false, message: evErr.message, events: [] };
     return {
       success: true,
       events: (events || []).map(e => ({ ...this.mapEvent(e), isFavorite: true })),
@@ -490,7 +570,16 @@ const EventifyDB = {
   },
 
   async submitReview(eventId, userId, rating, comment) {
-    const { error } = await sb.from('reviews').insert({ user_id: userId, event_id: eventId, rating, comment });
+    const eid = Number(eventId);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event.' };
+    }
+    const { error } = await sb.from('reviews').insert({
+      user_id: userId,
+      event_id: eid,
+      rating,
+      comment,
+    });
     if (error) return { success: false, message: error.message };
     return { success: true, message: 'Review submitted! Thank you.' };
   },

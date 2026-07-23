@@ -30,8 +30,23 @@ function safeAuthRedirect(raw) {
 
 const Eventify = {
   currentUser: null,
+  _booted: false,
+  _authUnsub: null,
 
   async init() {
+    if (this._booted) {
+      await this.checkSession();
+      if (!this.enforceAuthGate()) return;
+      this.setupNavbar();
+      this.setupHeroAuth();
+      this.setupHeroSearch();
+      this.setupMobileMenu();
+      this.setupHelpChat();
+      this.setupFeatureExtras();
+      return;
+    }
+    this._booted = true;
+
     if (typeof Theme !== 'undefined') Theme.init();
     if (typeof I18n !== 'undefined') I18n.init();
 
@@ -50,7 +65,7 @@ const Eventify = {
     this.setupPwa();
     this.setupFeatureExtras();
 
-    sb.auth.onAuthStateChange(async () => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange(async () => {
       await this.checkSession();
       if (!this.enforceAuthGate()) return;
       this.setupNavbar();
@@ -59,6 +74,7 @@ const Eventify = {
       this.setupHelpChat();
       this.setupFeatureExtras();
     });
+    this._authUnsub = subscription;
 
     window.addEventListener('eventify:lang', () => {
       this.setupNavbar();
@@ -724,14 +740,28 @@ const Eventify = {
   },
 
   async toggleFavorite(eventId, btn) {
-    if (!this.requireAuth()) return;
-    const data = await EventifyDB.toggleFavorite(eventId, this.currentUser.id);
-    this.showToast(data.message, data.success ? 'success' : 'error');
-    if (data.success && btn) {
-      btn.classList.toggle('favorited', data.favorited);
-      btn.textContent = data.favorited ? '♥' : '♡';
+    if (!this.requireAuth()) return { success: false, message: 'Please log in first.' };
+    if (btn) btn.disabled = true;
+    try {
+      const data = await EventifyDB.toggleFavorite(eventId, this.currentUser.id);
+      this.showToast(data.message, data.success ? 'success' : 'error');
+      if (data.success && btn) {
+        btn.classList.toggle('favorited', data.favorited);
+        if (btn.classList.contains('favorite-detail-btn')) {
+          btn.textContent = data.favorited ? '♥ Favorite Events' : '♡ Add to Favorites';
+        } else {
+          btn.textContent = data.favorited ? '♥' : '♡';
+        }
+        btn.title = data.favorited ? 'Remove favorite' : 'Favorite';
+      }
+      return data;
+    } catch (err) {
+      const message = err?.message || 'Could not update favorite.';
+      this.showToast(message, 'error');
+      return { success: false, message };
+    } finally {
+      if (btn) btn.disabled = false;
     }
-    return data;
   },
 
   bindRsvpButtons(container) {
@@ -745,9 +775,22 @@ const Eventify = {
 
   bindFavoriteButtons(container) {
     container.querySelectorAll('.favorite-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
+      btn.addEventListener('click', async (e) => {
         e.preventDefault();
-        this.toggleFavorite(btn.dataset.id, btn);
+        e.stopPropagation();
+        const data = await this.toggleFavorite(btn.dataset.id, btn);
+        // On Favorites page, remove card when unfavorited
+        if (data?.success && data.favorited === false) {
+          const card = btn.closest('.event-card');
+          if (card && /favorites\.html$/i.test(normalizePageName(location.pathname.split('/').pop()))) {
+            card.remove();
+            const grid = document.getElementById('fav-grid') || document.getElementById('dash-favorites');
+            if (grid && !grid.querySelector('.event-card')) {
+              document.getElementById('empty')?.classList.remove('hidden');
+              document.getElementById('empty-dash-favorites')?.classList.remove('hidden');
+            }
+          }
+        }
       });
     });
   },

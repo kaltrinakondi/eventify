@@ -147,7 +147,7 @@ const EventifyFeatures = {
 
   async getViews(eventId) {
     try {
-      const { data } = await sb.from('event_views').select('views').eq('event_id', eventId).maybeSingle();
+      const { data } = await sb.from('event_views').select('views').eq('event_id', Number(eventId)).maybeSingle();
       return data?.views || 0;
     } catch {
       return 0;
@@ -156,7 +156,7 @@ const EventifyFeatures = {
 
   async listCheckins(eventId) {
     try {
-      const { data, error } = await sb.from('event_checkins').select('*').eq('event_id', eventId).order('checked_in_at', { ascending: false });
+      const { data, error } = await sb.from('event_checkins').select('*').eq('event_id', Number(eventId)).order('checked_in_at', { ascending: false });
       if (error) throw error;
       return data || [];
     } catch {
@@ -165,9 +165,10 @@ const EventifyFeatures = {
   },
 
   async checkInGuest(eventId, guestKey, guestName) {
+    const eid = Number(eventId);
     try {
       const { error } = await sb.from('event_checkins').upsert({
-        event_id: eventId,
+        event_id: eid,
         guest_key: guestKey,
         guest_name: guestName || 'Guest',
         checked_in_at: new Date().toISOString(),
@@ -175,7 +176,7 @@ const EventifyFeatures = {
       if (error) throw error;
       return { success: true };
     } catch {
-      const key = `eventify_checkins_${eventId}`;
+      const key = `eventify_checkins_${eid}`;
       const list = JSON.parse(localStorage.getItem(key) || '[]');
       const existing = list.find((x) => x.guest_key === guestKey);
       if (existing) existing.checked_in_at = new Date().toISOString();

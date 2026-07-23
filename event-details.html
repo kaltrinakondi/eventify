@@ -1,80 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Details - Eventify</title>
-    <link rel="stylesheet" href="css/style.css?v=49">
-  <script src="js/theme.js"></script>
-  <script src="js/auth-gate.js?v=3"></script>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="icon" type="image/png" href="images/app-icon.png">
-  <link rel="apple-touch-icon" href="images/app-icon.png">
-  <meta name="theme-color" content="#4b245d">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Event Details - Eventify</title>
+  <script>
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var id = params.get('id');
+      location.replace(id ? ('event.html?id=' + encodeURIComponent(id)) : 'events.html');
+    })();
+  </script>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <a href="index.html" class="logo">Eventify</a>
-            <button class="menu-toggle" id="menu-toggle" aria-label="Toggle menu">
-                <span></span><span></span><span></span>
-            </button>
-            <ul class="nav-links" id="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="events.html">Events</a></li>
-                <li><a href="create-event.html">Create Event</a></li>
-            </ul>
-            <div class="nav-auth" id="nav-auth">
-              <a href="login.html" class="btn btn-sm btn-outline">Sign In</a>
-              <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
-            </div>
-        </div>
-    </nav>
-
-    <main>
-        <section class="event-detail">
-            <div class="container">
-                <a href="events.html" style="display: inline-block; margin-bottom: 1.5rem; font-weight: 500;">&larr; Back to Events</a>
-                <div id="event-detail">
-                    <div class="loading">
-                        <div class="spinner"></div>
-                        <p>Loading event details...</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <a href="index.html" class="logo">Eventify</a>
-                    <p>Your go-to platform for discovering and managing events.</p>
-                </div>
-                <div>
-                    <h4>Quick Links</h4>
-                    <ul class="footer-links">
-                        <li><a href="events.html">All Events</a></li>
-                        <li><a href="create-event.html">Create Event</a></li>
-                        <li><a href="my-events.html">My Events</a></li>
-                    </ul>
-                </div>
-                <div>
-                    <h4>Account</h4>
-                    <ul class="footer-links">
-                        <li><a href="login.html">Login</a></li>
-                        <li><a href="register.html">Register</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Eventify. All rights reserved.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="js/main.js"></script>
-    <script src="js/event-details.js"></script>
+  <p>Redirecting…</p>
 </body>
 </html>
