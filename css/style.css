@@ -2811,19 +2811,20 @@ h4 { font-size: 1.25rem; }
 }
 
 .kanban-card {
-  background: #fff;
+  background: var(--card);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px;
   margin-bottom: 0;
   cursor: default;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  color: var(--text);
 }
 
 .kanban-card:active { cursor: default; }
 .kanban-card .meta { font-size: 0.75rem; color: var(--text-light); margin-top: 6px; }
 .kanban-card.dragging { opacity: 0.5; }
-.kanban-col.drag-over { outline: 2px dashed #0f766e; }
+.kanban-col.drag-over { outline: 2px dashed var(--primary); }
 
 .kanban-card-top {
   display: flex;
@@ -2856,7 +2857,7 @@ h4 { font-size: 1.25rem; }
   font-family: inherit;
   font-size: 0.88rem;
   color: var(--text);
-  background: #fff;
+  background: var(--background);
   padding: 8px 10px;
   outline: none;
 }
@@ -4724,4 +4725,91 @@ html[data-theme="dark"] .whos-coming-panel {
 
 html[data-theme="dark"] .note-chip-hint {
   color: #a7b8b3 !important;
+}
+
+/* Schedule / Budget / Guests / Board — force readable dark fields */
+html[data-theme="dark"] .planner-panel .dynamic-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.guest-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.budget-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.schedule-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.vendor-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.task-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.reminder-row,
+html[data-theme="dark"] .planner-panel .dynamic-row.doc-row,
+html[data-theme="dark"] .planner-panel .kanban-card,
+html[data-theme="dark"] .planner-panel .kanban-col,
+html[data-theme="dark"] .planner-panel .stat-chip,
+html[data-theme="dark"] .planner-panel .list-toolbar,
+html[data-theme="dark"] .planner-panel .empty-state,
+html[data-theme="dark"] .planner-panel .optional-guest-panel,
+html[data-theme="dark"] .planner-panel .file-upload {
+  background: #15211f !important;
+  color: #eef4f2 !important;
+  border-color: #2f403c !important;
+}
+
+html[data-theme="dark"] .planner-panel input,
+html[data-theme="dark"] .planner-panel select,
+html[data-theme="dark"] .planner-panel textarea,
+html[data-theme="dark"] .planner-panel .kanban-title,
+html[data-theme="dark"] .planner-panel .kanban-notes,
+html[data-theme="dark"] .planner-panel .kanban-compose-input,
+html[data-theme="dark"] .planner-panel .kanban-card-meta input,
+html[data-theme="dark"] .planner-panel .kanban-card-meta select,
+html[data-theme="dark"] #board-new-title,
+html[data-theme="dark"] #guest_names_bulk,
+html[data-theme="dark"] #total_budget {
+  background: #0f1716 !important;
+  color: #f3faf8 !important;
+  border: 1px solid #3a4f4a !important;
+  color-scheme: dark;
+}
+
+html[data-theme="dark"] .planner-panel input::placeholder,
+html[data-theme="dark"] .planner-panel textarea::placeholder,
+html[data-theme="dark"] .planner-panel .kanban-compose-input::placeholder,
+html[data-theme="dark"] #board-new-title::placeholder {
+  color: #8aa39c !important;
+  opacity: 1 !important;
+}
+
+html[data-theme="dark"] .planner-panel label,
+html[data-theme="dark"] .planner-panel h3,
+html[data-theme="dark"] .planner-panel h4,
+html[data-theme="dark"] .planner-panel .card-desc,
+html[data-theme="dark"] .planner-panel .stat-chip .label,
+html[data-theme="dark"] .planner-panel .stat-chip .value,
+html[data-theme="dark"] .planner-panel .qr-code,
+html[data-theme="dark"] .planner-panel .note-chip-hint,
+html[data-theme="dark"] .planner-panel .kanban-empty,
+html[data-theme="dark"] .planner-panel .kanban-col .count {
+  color: #eef4f2 !important;
+}
+
+html[data-theme="dark"] .planner-panel .stat-chip .label,
+html[data-theme="dark"] .planner-panel .card-desc,
+html[data-theme="dark"] .planner-panel .note-chip-hint,
+html[data-theme="dark"] .planner-panel .kanban-empty {
+  color: #a7b8b3 !important;
+}
+
+html[data-theme="dark"] .planner-panel .btn-secondary {
+  background: #243330 !important;
+  color: #eef4f2 !important;
+  border-color: #3a4f4a !important;
+}
+
+html[data-theme="dark"] .planner-panel .btn-outline {
+  color: #99f6e4 !important;
+  border-color: rgba(45, 212, 191, 0.5) !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .planner-panel .icon-btn {
+  color: #f87171 !important;
+}
+
+html[data-theme="dark"] .planner-panel option {
+  background: #15211f;
+  color: #eef4f2;
 }
