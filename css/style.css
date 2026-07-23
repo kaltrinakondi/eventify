@@ -4522,9 +4522,45 @@ html[data-theme="dark"] .nav-links a {
   color: #c5d4cf;
 }
 
-html[data-theme="dark"] .btn-primary,
-html[data-theme="dark"] .btn-secondary {
+html[data-theme="dark"] .btn-primary {
   color: #042f2e !important;
+}
+
+html[data-theme="dark"] .btn-secondary {
+  background: #243330 !important;
+  color: #eef4f2 !important;
+  border-color: #3a4f4a !important;
+}
+
+html[data-theme="dark"] .btn-secondary:hover {
+  border-color: #2dd4bf !important;
+  color: #99f6e4 !important;
+}
+
+html[data-theme="dark"] .btn-outline {
+  color: #99f6e4 !important;
+  border-color: rgba(45, 212, 191, 0.5) !important;
+  background: transparent !important;
+}
+
+html[data-theme="dark"] .btn-outline:hover {
+  background: rgba(45, 212, 191, 0.16) !important;
+  color: #ccfbf1 !important;
+}
+
+html[data-theme="dark"] .invite-vote.btn-primary,
+html[data-theme="dark"] .invite-vote.btn-secondary,
+html[data-theme="dark"] .invite-vote.btn-outline {
+  min-height: 48px;
+  font-weight: 700;
+}
+
+html[data-theme="dark"] .invite-vote.active {
+  box-shadow: 0 0 0 2px #2dd4bf !important;
+}
+
+html[data-theme="dark"] .invite-feedback {
+  color: #5eead4 !important;
 }
 
 html[data-theme="dark"] strong {
