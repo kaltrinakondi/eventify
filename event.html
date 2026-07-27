@@ -130,27 +130,18 @@
                   <button class="btn btn-secondary btn-block rsvp-status-btn ${userRsvp === 'maybe' ? 'active' : ''}" data-status="maybe">? Maybe</button>
                   <button class="btn btn-outline btn-block rsvp-status-btn ${userRsvp === 'not_going' ? 'active' : ''}" data-status="not_going">✗ Not Going</button>
                 </div>
-                <button class="btn btn-outline btn-block" id="btn-waitlist" style="margin-top:10px;">Join waitlist</button>
                 <button class="btn btn-outline btn-block favorite-detail-btn ${isFav ? 'favorited' : ''}" id="favorite-btn" style="margin-top:12px;">
                   ${isFav ? '♥ Favorite Events' : '♡ Add to Favorites'}
                 </button>
                 ` : `
                 <button class="btn btn-primary btn-block" id="detail-whos-coming">👥 Who's coming</button>
                 <a class="btn btn-secondary btn-block" href="checkin.html?id=${e.id}" style="margin-top:10px;">✅ Guest check-in</a>
-                <button class="btn btn-outline btn-block" id="btn-view-waitlist" style="margin-top:10px;">📋 Waitlist</button>
                 <button class="btn btn-outline btn-block favorite-detail-btn ${isFav ? 'favorited' : ''}" id="favorite-btn" style="margin-top:12px;">
                   ${isFav ? '♥ Favorite Events' : '♡ Add to Favorites'}
                 </button>
                 `}
               </div>
               ${Eventify.isEventHost(e) ? `
-              <div class="sidebar-card" id="host-waitlist-card">
-                <h3>Waitlist <span id="waitlist-count" class="muted" style="font-weight:500;"></span></h3>
-                <p class="card-desc">People who tapped Join waitlist. Only you (the host) can see this.</p>
-                <div id="host-waitlist-list" class="invite-rsvp-list" style="margin-top:12px;">
-                  <p class="muted">Loading…</p>
-                </div>
-              </div>
               <div class="sidebar-card" id="organizer-share-card">
                 <h3>Share invite link</h3>
                 <p class="card-desc">Only you (the host) can share this link. Guests cannot see who else is coming.</p>
@@ -182,23 +173,6 @@
             if (el) el.textContent = `👁 ${views} views`;
           });
         }
-
-        document.getElementById('btn-waitlist')?.addEventListener('click', async () => {
-          if (!Eventify.requireAuth()) return;
-          const result = await EventifyFeatures.joinWaitlist(id, {
-            name: Eventify.currentUser.name || 'Guest',
-            email: Eventify.currentUser.email || '',
-            userId: Eventify.currentUser.id,
-          });
-          Eventify.showToast(result.message, result.success ? 'success' : 'error');
-          if (result.success && e.organizer_id) {
-            EventifyFeatures.pushNotification(e.organizer_id, {
-              title: 'New waitlist signup',
-              body: `${Eventify.currentUser.name || 'Someone'} joined the waitlist for ${e.title}`,
-              link: `event.html?id=${id}`,
-            });
-          }
-        });
 
         document.getElementById('btn-report-event')?.addEventListener('click', async () => {
           const reason = prompt('Why are you reporting this event?', 'Spam / inappropriate');
@@ -284,36 +258,6 @@
                 votes: latestVotes,
                 initialFilter: 'going',
               });
-            });
-
-            async function renderHostWaitlist() {
-              const list = document.getElementById('host-waitlist-list');
-              const countEl = document.getElementById('waitlist-count');
-              if (!list || typeof EventifyFeatures === 'undefined') return;
-              const data = await EventifyFeatures.listWaitlist(e.id);
-              const entries = data.entries || [];
-              if (countEl) countEl.textContent = entries.length ? `(${entries.length})` : '';
-              if (!entries.length) {
-                list.innerHTML = '<p class="note-chip-hint">No waitlist signups yet.</p>';
-                return;
-              }
-              list.innerHTML = entries.map((row) => `
-                <div class="invite-rsvp-row">
-                  <div>
-                    <strong>${Eventify.escapeHtml(row.name || 'Guest')}</strong>
-                    ${row.email ? `<div class="muted" style="font-size:0.85rem;">${Eventify.escapeHtml(row.email)}</div>` : ''}
-                  </div>
-                  <span class="muted" style="font-size:0.8rem;white-space:nowrap;">
-                    ${row.created_at ? Eventify.escapeHtml(String(row.created_at).slice(0, 10)) : ''}
-                  </span>
-                </div>
-              `).join('');
-            }
-
-            renderHostWaitlist();
-            document.getElementById('btn-view-waitlist')?.addEventListener('click', () => {
-              document.getElementById('host-waitlist-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              renderHostWaitlist();
             });
           })();
         }
