@@ -510,9 +510,13 @@ const Eventify = {
   },
 
   formatTime(timeStr) {
-    const [h, m] = String(timeStr).split(':');
+    if (!timeStr) return '';
+    const parts = String(timeStr).split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10) || 0;
+    if (!Number.isFinite(h)) return String(timeStr);
     const d = new Date();
-    d.setHours(parseInt(h), parseInt(m));
+    d.setHours(h, m, 0, 0);
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   },
 
@@ -535,23 +539,23 @@ const Eventify = {
   },
 
   openWhatsAppInvite(text) {
-    const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(text || '')}`;
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    const url = `https://wa.me/?text=${encodeURIComponent(text || '')}`;
+    // Direct navigation is more reliable on phones than window.open / synthetic <a>.click()
+    const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+    if (mobile) {
+      window.location.href = url;
+      return;
+    }
+    const win = window.open(url, '_blank', 'noopener,noreferrer');
+    if (!win) {
+      // Popup blocked — fall back to same-tab navigation
+      window.location.href = url;
+    }
   },
 
   openEmailInvite({ subject, body }) {
     const href = `mailto:?subject=${encodeURIComponent(subject || "You're invited!")}&body=${encodeURIComponent(body || '')}`;
-    const a = document.createElement('a');
-    a.href = href;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    window.location.href = href;
   },
 
   exportInviteRsvpsCsv(votes, eventTitle = 'event') {

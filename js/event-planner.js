@@ -1151,6 +1151,13 @@ const EventPlanner = {
 
     const shareInviteMessage = async () => {
       if (!this.assertHost('share the invite link')) return null;
+      const vis = document.getElementById('visibility')?.value
+        || document.getElementById('visibility_basic')?.value
+        || 'public';
+      if (vis === 'private') {
+        Eventify.showToast('Private events cannot be shared. Switch to Invite Only or Public.', 'error');
+        return null;
+      }
       if (!this.editId) {
         Eventify.showToast('Save or publish first so guests can open the invite link', 'error');
         return null;
@@ -1187,14 +1194,31 @@ const EventPlanner = {
     document.getElementById('btn-copy-invite-link')?.addEventListener('click', copyInviteLink);
 
     const shareWhatsApp = async () => {
-      const msg = await shareInviteMessage();
-      if (!msg) return;
-      Eventify.openWhatsAppInvite(msg.text);
+      // Preserve user-gesture for desktop popups (async token fetch would otherwise block them)
+      const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+      const pending = mobile ? null : window.open('about:blank', '_blank');
+      try {
+        const msg = await shareInviteMessage();
+        if (!msg) {
+          pending?.close();
+          return;
+        }
+        const url = `https://wa.me/?text=${encodeURIComponent(msg.text)}`;
+        if (pending) pending.location.href = url;
+        else window.location.href = url;
+      } catch (err) {
+        pending?.close();
+        Eventify.showToast(err?.message || 'Could not open WhatsApp', 'error');
+      }
     };
     const shareEmail = async () => {
-      const msg = await shareInviteMessage();
-      if (!msg) return;
-      Eventify.openEmailInvite({ subject: msg.subject, body: msg.text });
+      try {
+        const msg = await shareInviteMessage();
+        if (!msg) return;
+        Eventify.openEmailInvite({ subject: msg.subject, body: msg.text });
+      } catch (err) {
+        Eventify.showToast(err?.message || 'Could not open email', 'error');
+      }
     };
     document.getElementById('btn-top-whatsapp-invite')?.addEventListener('click', shareWhatsApp);
     document.getElementById('btn-whatsapp-invite')?.addEventListener('click', shareWhatsApp);
@@ -1300,12 +1324,15 @@ const EventPlanner = {
       'btn-whos-coming',
       'btn-open-invite-page',
       'btn-regenerate-invite',
+      'btn-regen-invite-link',
     ].forEach(id => {
       const btn = document.getElementById(id);
       if (!btn) return;
-      // Who's coming stays available for host even on private
       const keep = id.includes('whos-coming');
       btn.disabled = inviteDisabled && !keep;
+      btn.title = (inviteDisabled && !keep)
+        ? 'Switch visibility to Invite Only or Public to share'
+        : (btn.getAttribute('aria-label') || btn.title || '');
     });
   },
 
