@@ -127,6 +127,32 @@ const EventifyFeatures = {
     }
   },
 
+  async listWaitlist(eventId) {
+    const eid = Number(eventId);
+    try {
+      const { data, error } = await sb
+        .from('waitlist')
+        .select('id, name, email, created_at, user_id')
+        .eq('event_id', eid)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return { success: true, entries: data || [] };
+    } catch (err) {
+      const local = JSON.parse(localStorage.getItem(`eventify_waitlist_${eid}`) || '[]');
+      return {
+        success: true,
+        entries: local.map((row, i) => ({
+          id: `local-${i}`,
+          name: row.name,
+          email: row.email || '',
+          created_at: row.at || null,
+        })),
+        local: true,
+        message: err?.message,
+      };
+    }
+  },
+
   async reportEvent(eventId, { reason, details, reporterId }) {
     try {
       const { error } = await sb.from('event_reports').insert({
