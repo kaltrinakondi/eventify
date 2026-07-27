@@ -322,6 +322,40 @@ const EventifyDB = {
     };
   },
 
+  /** Drop empty strings that break DATE/TIME columns; keep 0/false. */
+  sanitizeEventUpdate(row) {
+    const out = {};
+    for (const [key, value] of Object.entries(row || {})) {
+      if (value === undefined) continue;
+      if (value === '' && ['date', 'time', 'end_date', 'end_time'].includes(key)) continue;
+      out[key] = value;
+    }
+    return out;
+  },
+
+  coreEventUpdate(row) {
+    const keys = [
+      'title', 'description', 'category', 'date', 'time', 'location',
+      'price', 'image', 'is_free', 'visibility',
+    ];
+    const out = {};
+    keys.forEach((k) => {
+      if (row[k] !== undefined) out[k] = row[k];
+    });
+    return out;
+  },
+
+  async getEventForEdit(id) {
+    const eid = Number(id);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event.' };
+    }
+    const { data, error } = await sb.from('events').select('*').eq('id', eid).maybeSingle();
+    if (error) return { success: false, message: error.message };
+    if (!data) return { success: false, message: 'Event not found.' };
+    return { success: true, event: this.mapEvent(data) };
+  },
+
   async createEvent(payload, imageFile, galleryFiles = []) {
     let image = 'images/default-event.jpg';
     try {
@@ -356,6 +390,11 @@ const EventifyDB = {
   },
 
   async updateEvent(id, payload, imageFile, galleryFiles = []) {
+    const eid = Number(id);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event id.' };
+    }
+
     try {
       if (imageFile) {
         payload.image = await this.uploadEventImage(payload.organizer_id, imageFile);
@@ -371,13 +410,37 @@ const EventifyDB = {
       return { success: false, message: err.message };
     }
 
-    const update = this.buildEventRow(payload, payload.image);
+    let update = this.sanitizeEventUpdate(this.buildEventRow(payload, payload.image));
     delete update.organizer_id;
-    // Ensure cleared covers are written even when buildEventRow would skip empty values
     if (payload.clear_image && !imageFile) {
       update.image = 'images/default-event.jpg';
     }
-    const { data, error } = await sb.from('events').update(update).eq('id', id).select('id, share_token').single();
+
+    let { data, error } = await sb
+      .from('events')
+      .update(update)
+      .eq('id', eid)
+      .select('id, share_token');
+
+    // Missing planning columns → retry with core fields so Basics edits still save
+    if (error && /column|schema cache|planning_data|gallery|venue_name|end_date|share_token|visibility|is_free/i.test(error.message || '')) {
+      const core = this.sanitizeEventUpdate(this.coreEventUpdate(update));
+      ({ data, error } = await sb
+        .from('events')
+        .update(core)
+        .eq('id', eid)
+        .select('id, share_token'));
+      if (!error && data?.length) {
+        return {
+          success: true,
+          message: 'Event basics updated. Run database/event-planning-upgrade.sql in Supabase to save planner fields too.',
+          event_id: data[0].id,
+          share_token: data[0].share_token || payload.share_token,
+          partial: true,
+        };
+      }
+    }
+
     if (error) {
       if (/share_token/i.test(error.message || '')) {
         return {
@@ -385,12 +448,24 @@ const EventifyDB = {
           message: 'Share links need a database upgrade. Run database/share-invite-rsvp.sql in Supabase, then try again.',
         };
       }
+      if (/invalid input syntax for type (date|time)/i.test(error.message || '')) {
+        return { success: false, message: 'Check date and time fields — they cannot be empty when saving.' };
+      }
       return { success: false, message: error.message };
     }
+
+    if (!data?.length) {
+      return {
+        success: false,
+        message: 'Update did not apply. Make sure you are logged in as the event organizer.',
+      };
+    }
+
     return {
       success: true,
       message: 'Event updated successfully!',
-      share_token: data?.share_token || payload.share_token,
+      event_id: data[0].id,
+      share_token: data[0].share_token || payload.share_token,
     };
   },
 

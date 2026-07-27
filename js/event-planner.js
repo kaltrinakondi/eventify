@@ -1899,6 +1899,10 @@ const EventPlanner = {
   validate(payload, isDraft) {
     if (isDraft) {
       if (!payload.title) return 'Add at least a title to save a draft.';
+      // DATE/TIME columns are NOT NULL — keep existing values or require them
+      if (!payload.date || !payload.time) {
+        return 'Drafts still need a start date and time (required by the database).';
+      }
       return null;
     }
     if (!payload.title || !payload.description || !payload.category || !payload.date || !payload.time || !payload.location) {
@@ -1961,7 +1965,9 @@ const EventPlanner = {
         else if (!this.shareToken) this.shareToken = payload.share_token;
         this.refreshShareLinkUI();
         const id = data.event_id || this.editId;
-        if (!isDraft && id) {
+        // After a successful update, stay on planner for drafts / partial saves;
+        // only redirect to public page when fully publishing.
+        if (!isDraft && id && !data.partial) {
           setTimeout(() => { window.location.href = `event.html?id=${id}`; }, 1200);
         } else if (data.event_id && !this.editId) {
           this.editId = data.event_id;
@@ -2101,9 +2107,10 @@ const EventPlanner = {
   },
 
   async loadEvent(id) {
-    const data = await Eventify.fetchEvents({ id });
+    // Load from `events` (not the view) so planning_data / gallery always come back for edit
+    const data = await EventifyDB.getEventForEdit(id);
     if (!data.success) {
-      this.showAlert('Could not load event for editing.', 'error');
+      this.showAlert(data.message || 'Could not load event for editing.', 'error');
       return;
     }
     if (data.event.organizer_id !== Eventify.currentUser.id && Eventify.currentUser.role !== 'admin') {
@@ -2111,8 +2118,9 @@ const EventPlanner = {
       setTimeout(() => { window.location.href = 'my-events.html'; }, 1500);
       return;
     }
+    this.editId = String(data.event.id);
     this.hydrateFromEvent(data.event);
-    const synced = await EventifyDB.ensureShareToken(id, data.event.share_token || this.shareToken);
+    const synced = await EventifyDB.ensureShareToken(this.editId, data.event.share_token || this.shareToken);
     if (synced.success) {
       this.shareToken = synced.share_token;
       this.refreshShareLinkUI();
