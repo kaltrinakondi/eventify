@@ -389,15 +389,35 @@
     background-attachment: scroll;
   }
 
+  /* Settings panel must be visible on phones when hamburger is pressed */
+  .settings-menu.open .settings-dropdown {
+    display: block !important;
+    position: fixed;
+    top: 76px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    min-width: 0;
+    max-height: min(70vh, calc(100dvh - 100px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 3000;
+    padding: 10px;
+    border-radius: 16px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  }
+
+  .settings-dropdown a,
+  .settings-dropdown button {
+    min-height: 48px;
+    padding: 14px 16px;
+    font-size: 1rem;
+  }
+
   .hamburger {
     min-width: 44px;
     min-height: 44px;
     padding: 10px;
-  }
-
-  /* Hamburger opens nav only — hide settings flyout on phones */
-  .settings-menu.open .settings-dropdown {
-    display: none !important;
   }
 
   .navbar .container {

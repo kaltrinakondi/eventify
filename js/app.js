@@ -310,19 +310,13 @@ const Eventify = {
       btn.onclick = (e) => {
         e.stopPropagation();
         const menu = document.getElementById('settings-menu');
-        const nav = document.getElementById('nav-links');
-        const isMobile = window.matchMedia('(max-width: 768px)').matches;
-        if (isMobile && nav) {
-          // On phones: hamburger = navigation drawer only
-          const open = !nav.classList.contains('open');
-          nav.classList.toggle('open', open);
-          menu?.classList.toggle('open', open);
-          btn.setAttribute('aria-expanded', open);
-          return;
-        }
         if (!menu) return;
         const open = menu.classList.toggle('open');
         btn.setAttribute('aria-expanded', open);
+        // Keep page nav drawer closed — settings panel is the phone menu
+        if (window.matchMedia('(max-width: 768px)').matches) {
+          document.getElementById('nav-links')?.classList.remove('open');
+        }
       };
     }
 
