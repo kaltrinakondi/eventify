@@ -175,12 +175,16 @@ const Eventify = {
     const authContainer = document.getElementById('nav-auth');
     const isLoggedIn = !!this.currentUser;
     const page = normalizePageName(window.location.pathname.split('/').pop());
-    const isAuthPage = PUBLIC_PAGES.includes(page);
 
     if (linksContainer) {
       let links;
-      if (isAuthPage && !isLoggedIn) {
-        links = [];
+      const isAuthForm = ['login.html', 'register.html', 'forgot-password.html', 'reset-password.html'].includes(page);
+      if (isAuthForm && !isLoggedIn) {
+        // Keep auth forms minimal — links live in mobile-auth / buttons
+        links = [
+          ['index.html', 'Home'],
+          ['events.html', 'Events'],
+        ];
       } else if (isLoggedIn) {
         const t = (k, fallback) => (typeof I18n !== 'undefined' ? I18n.t(k) : fallback);
         links = [
@@ -306,12 +310,19 @@ const Eventify = {
       btn.onclick = (e) => {
         e.stopPropagation();
         const menu = document.getElementById('settings-menu');
+        const nav = document.getElementById('nav-links');
+        const isMobile = window.matchMedia('(max-width: 768px)').matches;
+        if (isMobile && nav) {
+          // On phones: hamburger = navigation drawer only
+          const open = !nav.classList.contains('open');
+          nav.classList.toggle('open', open);
+          menu?.classList.toggle('open', open);
+          btn.setAttribute('aria-expanded', open);
+          return;
+        }
         if (!menu) return;
         const open = menu.classList.toggle('open');
         btn.setAttribute('aria-expanded', open);
-        if (window.matchMedia('(max-width: 768px)').matches) {
-          document.getElementById('nav-links')?.classList.toggle('open', open);
-        }
       };
     }
 

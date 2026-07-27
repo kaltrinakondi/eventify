@@ -112,7 +112,6 @@
     display: none;
   }
 
-  .nav-links.open + .nav-auth,
   .navbar .container {
     position: relative;
   }
@@ -267,15 +266,19 @@
   .dynamic-row.schedule-row,
   .dynamic-row.reminder-row,
   .dynamic-row.team-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 768px) {
   .planner-sticky-chrome {
-    top: 64px;
+    top: 76px;
     margin: 0 -16px 14px;
     padding: 8px 16px 8px;
+  }
+
+  .planner-shell {
+    padding: 0 16px;
   }
 
   .planner-sticky-chrome.is-scrolled {
@@ -296,10 +299,16 @@
     display: none;
   }
 
+  .planner-actions {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
   .planner-actions .btn-planner {
-    min-height: 40px;
+    min-height: 44px;
     padding: 8px 12px;
     font-size: 0.86rem;
+    flex: 1 1 auto;
   }
 
   .planner-grid-2,
@@ -313,7 +322,163 @@
   .dynamic-row.vendor-row,
   .dynamic-row.schedule-row,
   .dynamic-row.reminder-row,
-  .dynamic-row.team-row {
-    grid-template-columns: 1fr;
+  .dynamic-row.team-row,
+  .dynamic-row {
+    grid-template-columns: 1fr !important;
+  }
+
+  .dynamic-row > * {
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+
+  .list-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .list-toolbar input,
+  .list-toolbar select {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .planner-tabs {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    padding: 4px 2px 10px;
+    margin: 0 -4px 12px;
+  }
+
+  .planner-tab {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    min-height: 44px;
+    padding: 10px 14px;
+    white-space: nowrap;
+  }
+
+  /* Stop iOS zoom on focus */
+  input,
+  select,
+  textarea,
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .kanban-compose-input,
+  .help-chat-form input,
+  .hero-search input,
+  .hero-search select,
+  .search-bar input,
+  .search-bar select,
+  .discover-search input,
+  .discover-search select {
+    font-size: 16px !important;
+  }
+
+  html, body {
+    overflow-x: clip;
+    max-width: 100%;
+  }
+
+  body {
+    background-attachment: scroll;
+  }
+
+  .hamburger {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  /* Hamburger opens nav only — hide settings flyout on phones */
+  .settings-menu.open .settings-dropdown {
+    display: none !important;
+  }
+
+  .navbar .container {
+    position: relative;
+  }
+
+  .toast {
+    bottom: 96px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+
+  .help-chat-panel {
+    width: min(360px, calc(100% - 24px));
+    right: 12px;
+    bottom: 76px;
+  }
+
+  .event-sidebar .sidebar-card {
+    padding: 20px 16px;
+  }
+
+  .dashboard-layout {
+    padding: 24px 16px 96px;
+  }
+
+  .dashboard-layout .form-card {
+    margin: 0;
+  }
+
+  .dashboard-nav {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 8px;
+    padding-bottom: 4px;
+  }
+
+  .dashboard-nav .dash-nav {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 44px;
+  }
+
+  .icon-btn,
+  .btn-sm.btn-icon-share {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .invite-meta {
+    overflow-wrap: anywhere;
+  }
+
+  .visibility-toggle {
+    flex-direction: column;
+  }
+
+  .visibility-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .rsvp-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .rsvp-buttons .btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  main, .planner-page, .events-section {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .seating-floor {
+    overflow: auto;
   }
 }

@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>You're Invited - Eventify</title>
-  <link rel="stylesheet" href="css/style.css?v=51">
-  <link rel="stylesheet" href="css/responsive.css?v=7">
+  <link rel="stylesheet" href="css/style.css?v=52">
+  <link rel="stylesheet" href="css/responsive.css?v=8">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="images/app-icon.png">
   <link rel="apple-touch-icon" href="images/app-icon.png">
@@ -16,10 +16,18 @@
   <nav class="navbar">
     <div class="container">
       <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
-      <div class="nav-links">
+      <div class="nav-links" id="nav-links">
         <a href="index.html">Home</a>
         <a href="events.html">Events</a>
+        <div class="mobile-auth" id="mobile-auth"></div>
       </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu" type="button">
+        <span></span><span></span><span></span>
+      </button>
     </div>
   </nav>
 
@@ -45,7 +53,7 @@
   <script src="js/api.js?v=12"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
-  <script src="js/app.js?v=13"></script>
+  <script src="js/app.js?v=15"></script>
   <script>
     (function () {
       const token = new URLSearchParams(window.location.search).get('t') || '';
