@@ -144,8 +144,12 @@ const EventifyDB = {
   canViewEvent(event, userId, userEmail) {
     const vis = event.visibility || 'public';
     if (vis === 'public') return true;
+    // Host + admin can always view (admin for support tooling)
     if (userId && event.organizer_id === userId) return true;
+    if (typeof Eventify !== 'undefined' && Eventify.currentUser?.role === 'admin' && userId) return true;
+    // Private: host only
     if (vis === 'private') return false;
+    // Invite-only: guest list by email
     const guests = event.planning_data?.guests || [];
     const email = (userEmail || '').toLowerCase();
     if (!email) return false;
@@ -154,12 +158,32 @@ const EventifyDB = {
 
   async fetchEvents(params = {}) {
     if (params.id) {
-      const { data: event, error } = await sb
+      const eid = Number(params.id) || params.id;
+      let event = null;
+      let error = null;
+
+      ({ data: event, error } = await sb
         .from('events_with_stats')
         .select('*')
-        .eq('id', params.id)
-        .single();
-      if (error) return { success: false, message: 'Event not found.' };
+        .eq('id', eid)
+        .maybeSingle());
+
+      // Fallback to base table (same RLS)
+      if (!event && !error) {
+        ({ data: event, error } = await sb
+          .from('events')
+          .select('*')
+          .eq('id', eid)
+          .maybeSingle());
+      }
+
+      if (error || !event) {
+        return {
+          success: false,
+          restricted: true,
+          message: 'This event is private or was not found. Only the host can view private events.',
+        };
+      }
 
       const mapped = this.mapEvent(event);
       if (!this.canViewEvent(mapped, params.userId, params.userEmail)) {
@@ -173,7 +197,6 @@ const EventifyDB = {
         };
       }
 
-      const eid = Number(params.id) || params.id;
       const { data: reviews } = await sb
         .from('reviews')
         .select('id, rating, comment, created_at, profiles(name)')
@@ -618,7 +641,7 @@ const EventifyDB = {
     }
 
     const today = new Date().toISOString().split('T')[0];
-    let query = sb.from('events_with_stats').select('*').gte('date', today).neq('organizer_id', userId);
+    let query = sb.from('events_with_stats').select('*').gte('date', today).neq('organizer_id', userId).eq('visibility', 'public');
     if (excludeIds.length) query = query.not('id', 'in', `(${excludeIds.join(',')})`);
     if (categories.length) query = query.in('category', categories);
     query = query.order('date', { ascending: true }).limit(4);

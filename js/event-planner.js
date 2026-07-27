@@ -361,6 +361,7 @@ const EventPlanner = {
     });
 
     this.syncVisibilityHint();
+    this.refreshShareLinkUI();
   },
 
   syncVisibilityHint() {
@@ -369,8 +370,8 @@ const EventPlanner = {
     if (!hint) return;
     const hints = {
       public: 'Public events appear in search and the events page.',
-      private: 'Private events are hidden from browse. Only you (the organizer) can manage them.',
-      invite_only: 'Invite-only events are hidden unless the viewer is on the guest list (by email).',
+      private: 'Private events are only visible to you (the host). They do not appear in search, and invite links will not work for others.',
+      invite_only: 'Invite-only events stay hidden from browse. Guests need your invite link or to be on your guest list (by email).',
     };
     hint.textContent = hints[vis] || hints.public;
     if (vis === 'invite_only') {
@@ -1265,7 +1266,18 @@ const EventPlanner = {
     if (!this.isHost()) return;
     const input = document.getElementById('share_invite_url');
     const hint = document.getElementById('share-link-hint');
-    if (this.shareToken) {
+    const vis = document.getElementById('visibility')?.value
+      || document.getElementById('visibility_basic')?.value
+      || 'public';
+    const privateEvent = vis === 'private';
+    const inviteDisabled = privateEvent;
+
+    if (privateEvent) {
+      if (input) input.value = '';
+      if (hint) {
+        hint.textContent = 'Private events are host-only — guests cannot open an invite link. Switch to Invite Only or Public to share.';
+      }
+    } else if (this.shareToken) {
       const url = EventifyDB.inviteUrl(this.shareToken);
       if (input) input.value = url;
       if (hint) {
@@ -1286,9 +1298,14 @@ const EventPlanner = {
       'btn-whatsapp-invite',
       'btn-email-invite',
       'btn-whos-coming',
+      'btn-open-invite-page',
+      'btn-regenerate-invite',
     ].forEach(id => {
       const btn = document.getElementById(id);
-      if (btn) btn.disabled = false;
+      if (!btn) return;
+      // Who's coming stays available for host even on private
+      const keep = id.includes('whos-coming');
+      btn.disabled = inviteDisabled && !keep;
     });
   },
 

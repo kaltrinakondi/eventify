@@ -176,8 +176,8 @@ const HelpChat = {
       return [
         'Event visibility:',
         '• Public — anyone can find it',
-        '• Private — only you (the host) manage it',
-        '• Invite Only — guests need to be on your list (by email) or use your invite link',
+        '• Private — only you (the host) can see it; no invite links for guests',
+        '• Invite Only — guests need your invite link or to be on your guest list (by email)',
         '',
         'Set this at the top of Basics when creating/editing an event.',
       ].join('\n');
