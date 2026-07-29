@@ -448,7 +448,6 @@ const EventifyDB = {
       return { success: false, message: 'Invalid event id.' };
     }
 
-    // Fresh auth — stale sessions cause RLS to silently apply 0 rows
     const { data: authData, error: authErr } = await sb.auth.getUser();
     if (authErr || !authData?.user) {
       return { success: false, message: 'Please log in again, then update the event.' };
@@ -479,7 +478,6 @@ const EventifyDB = {
     let endTime = payload.end_time || null;
     if (endTime && /^\d{2}:\d{2}$/.test(endTime)) endTime = `${endTime}:00`;
 
-    // --- Stage 1: core fields (must succeed) ---
     const core = {
       title: payload.title,
       description: payload.description,
@@ -493,16 +491,34 @@ const EventifyDB = {
     };
     if (payload.image) core.image = payload.image;
 
-    // Prefer update without RETURNING first — some RLS setups hide RETURNING rows
-    let { error } = await sb
+    // Use RETURNING from the same write (primary) — a follow-up SELECT can hit a stale replica
+    let { data: rows, error } = await sb
       .from('events')
       .update(core)
       .eq('id', eid)
-      .eq('organizer_id', uid);
+      .eq('organizer_id', uid)
+      .select('id, title, visibility, share_token, location, category, date, time');
 
     if (error) {
-      // Admin / edge case: retry without organizer filter (RLS still applies)
-      ({ error } = await sb.from('events').update(core).eq('id', eid));
+      // Missing is_free column → retry without it
+      if (/is_free|column|schema cache/i.test(error.message || '')) {
+        const fallback = { ...core };
+        delete fallback.is_free;
+        ({ data: rows, error } = await sb
+          .from('events')
+          .update(fallback)
+          .eq('id', eid)
+          .eq('organizer_id', uid)
+          .select('id, title, visibility, share_token, location, category, date, time'));
+      }
+    }
+
+    if (!error && (!rows || !rows.length)) {
+      ({ data: rows, error } = await sb
+        .from('events')
+        .update(core)
+        .eq('id', eid)
+        .select('id, title, visibility, share_token, location, category, date, time'));
     }
 
     if (error) {
@@ -518,66 +534,36 @@ const EventifyDB = {
       return { success: false, message: error.message };
     }
 
-    // Read back what was actually saved
-    let { data: rows, error: readErr } = await sb
-      .from('events')
-      .select('id, title, visibility, share_token, organizer_id')
-      .eq('id', eid)
-      .maybeSingle();
-
-    if (readErr) {
-      return { success: false, message: readErr.message };
-    }
-
-    // Normalize single object → array
-    rows = rows ? [rows] : [];
-
-    if (!rows.length) {
+    if (!rows?.length) {
       return {
         success: false,
         message: 'Update blocked. Open the event via My Events → Edit while logged in as the host.',
       };
     }
 
-    // Confirm core fields stuck (title + visibility)
-    if (rows[0].title !== core.title || rows[0].visibility !== visibility) {
-      const { error: forceErr } = await sb.from('events').update(core).eq('id', eid);
-      if (forceErr) {
-        return { success: false, message: forceErr.message };
-      }
-      const { data: again } = await sb
+    let saved = rows[0];
+
+    // If RETURNING somehow lagged on visibility, force one more write+return
+    if (saved.visibility !== visibility || saved.title !== core.title) {
+      const { data: forced, error: forceErr } = await sb
         .from('events')
-        .select('id, title, visibility, share_token')
+        .update(core)
         .eq('id', eid)
-        .maybeSingle();
-      if (!again) {
-        return {
-          success: false,
-          message: 'Update blocked. Open the event via My Events → Edit while logged in as the host.',
-        };
-      }
-      rows = [again];
+        .select('id, title, visibility, share_token, location, category, date, time');
+      if (forceErr) return { success: false, message: forceErr.message };
+      if (forced?.[0]) saved = forced[0];
     }
 
-    // Force visibility again if DB returned a different value
-    if (rows[0].visibility !== visibility) {
-      const { data: visRows, error: visErr } = await sb
-        .from('events')
-        .update({ visibility })
-        .eq('id', eid)
-        .select('id, visibility');
-      if (visErr) {
-        return { success: false, message: `Could not set visibility: ${visErr.message}` };
-      }
-      if (!visRows?.length || visRows[0].visibility !== visibility) {
-        return {
-          success: false,
-          message: 'Visibility did not save. Run database/fix-visibility.sql in Supabase, then try again.',
-        };
-      }
+    if (saved.title !== core.title || saved.visibility !== visibility) {
+      return {
+        success: false,
+        message: 'Could not save changes. Try again, or re-login and edit from My Events.',
+        event_id: saved.id,
+        visibility: saved.visibility,
+      };
     }
 
-    // --- Stage 2: extended / planner fields (best effort, never undo core) ---
+    // Extended planner fields (never overwrite visibility/title)
     const extended = this.sanitizeEventUpdate({
       end_date: payload.end_date || payload.date || null,
       end_time: endTime,
@@ -592,46 +578,17 @@ const EventifyDB = {
       planning_data: payload.planning_data || {},
       ...(payload.share_token ? { share_token: payload.share_token } : {}),
     });
+    delete extended.visibility;
+    delete extended.title;
 
+    let partial = false;
+    let partialMsg = '';
     if (Object.keys(extended).length) {
       const { error: extErr } = await sb.from('events').update(extended).eq('id', eid);
       if (extErr && !/column|schema cache/i.test(extErr.message || '')) {
-        // Non-column errors on extended fields — report but core already saved
-        return {
-          success: true,
-          partial: true,
-          message: `Basics saved (including ${visibility}), but some planner fields failed: ${extErr.message}`,
-          event_id: eid,
-          share_token: rows[0].share_token || payload.share_token,
-          visibility,
-        };
+        partial = true;
+        partialMsg = ` Basics saved, but some planner fields failed: ${extErr.message}`;
       }
-    }
-
-    // --- Stage 3: verify from DB ---
-    const { data: verified, error: verifyErr } = await sb
-      .from('events')
-      .select('id, title, visibility, share_token, location, category, date, time')
-      .eq('id', eid)
-      .maybeSingle();
-
-    if (verifyErr || !verified) {
-      return {
-        success: true,
-        message: 'Update sent, but could not verify. Refresh and check the event.',
-        event_id: eid,
-        share_token: rows[0].share_token || payload.share_token,
-        visibility,
-      };
-    }
-
-    if (verified.visibility !== visibility) {
-      return {
-        success: false,
-        message: `Saved visibility is "${verified.visibility}" instead of "${visibility}". Run database/fix-visibility.sql.`,
-        event_id: verified.id,
-        visibility: verified.visibility,
-      };
     }
 
     const visMsg = {
@@ -642,11 +599,12 @@ const EventifyDB = {
 
     return {
       success: true,
-      message: visMsg[verified.visibility] || 'Event updated successfully!',
-      event_id: verified.id,
-      share_token: verified.share_token || payload.share_token,
-      visibility: verified.visibility,
-      verified,
+      partial,
+      message: (visMsg[saved.visibility] || 'Event updated successfully!') + partialMsg,
+      event_id: saved.id,
+      share_token: saved.share_token || payload.share_token,
+      visibility: saved.visibility,
+      verified: saved,
     };
   },
 

@@ -2062,6 +2062,8 @@ const EventPlanner = {
 
         // Lock UI to what the database actually saved
         if (data.visibility) this.setVisibility(data.visibility);
+        if (data.verified?.title) document.getElementById('title').value = data.verified.title;
+        if (data.verified?.location) document.getElementById('location').value = data.verified.location;
         this.showAlert(isDraft ? 'Draft saved.' : data.message, 'success');
         Eventify.showToast(data.message, 'success');
 
@@ -2073,11 +2075,11 @@ const EventPlanner = {
           history.replaceState(null, '', `create-event.html?edit=${this.editId}`);
           this.updatePlannerHeader();
         }
-        // After full publish/update, open detail with cache-bust so badge shows new visibility
+        // Stay on planner for drafts/partial; otherwise open detail after a short pause
         if (!isDraft && id && !data.partial) {
           setTimeout(() => {
             window.location.href = `event.html?id=${id}&_=${Date.now()}`;
-          }, 900);
+          }, 700);
         } else if (data.event_id && !this.editId) {
           this.editId = String(data.event_id);
           history.replaceState(null, '', `create-event.html?edit=${data.event_id}`);
