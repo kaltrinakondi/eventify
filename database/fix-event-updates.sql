@@ -160,6 +160,38 @@ $$;
 REVOKE ALL ON FUNCTION public.save_my_event(bigint, jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.save_my_event(bigint, jsonb) TO authenticated;
 
+-- Fresh read for Edit (host only)
+CREATE OR REPLACE FUNCTION public.get_my_event(p_id bigint)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_uid uuid := auth.uid();
+  v_row public.events%ROWTYPE;
+BEGIN
+  IF v_uid IS NULL THEN
+    RAISE EXCEPTION 'Not authenticated';
+  END IF;
+
+  SELECT * INTO v_row FROM public.events WHERE id = p_id;
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  IF v_row.organizer_id IS DISTINCT FROM v_uid
+     AND NOT EXISTS (SELECT 1 FROM public.profiles WHERE id = v_uid AND role = 'admin') THEN
+    RAISE EXCEPTION 'Not allowed';
+  END IF;
+
+  RETURN to_jsonb(v_row);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.get_my_event(bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.get_my_event(bigint) TO authenticated;
+
 -- 4) Refresh view so listings include visibility
 DROP VIEW IF EXISTS events_with_stats;
 CREATE VIEW events_with_stats

@@ -410,10 +410,68 @@ const EventifyDB = {
     if (!Number.isFinite(eid) || eid <= 0) {
       return { success: false, message: 'Invalid event.' };
     }
-    const { data, error } = await sb.from('events').select('*').eq('id', eid).maybeSingle();
-    if (error) return { success: false, message: error.message };
-    if (!data) return { success: false, message: 'Event not found.' };
-    return { success: true, event: this.mapEvent(data) };
+
+    // Prefer last successful save from this browser (avoids stale DB read after Update)
+    let stash = null;
+    try {
+      const raw = sessionStorage.getItem('eventify_last_edit');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && Number(parsed.id) === eid && (Date.now() - (parsed.at || 0)) < 60 * 60 * 1000) {
+          stash = parsed;
+        }
+      }
+    } catch (_) { /* ignore */ }
+
+    let data = null;
+    let error = null;
+
+    // RPC read when available (same path as save)
+    try {
+      const rpc = await sb.rpc('get_my_event', { p_id: eid });
+      if (!rpc.error && rpc.data) {
+        data = typeof rpc.data === 'string' ? JSON.parse(rpc.data) : rpc.data;
+      }
+    } catch (_) { /* ignore */ }
+
+    if (!data) {
+      ({ data, error } = await sb.from('events').select('*').eq('id', eid).maybeSingle());
+    }
+
+    // If DB looks behind the stash, retry once
+    if (stash && data && (data.title !== stash.title || data.visibility !== stash.visibility || data.location !== stash.location)) {
+      await new Promise((r) => setTimeout(r, 450));
+      const again = await sb.from('events').select('*').eq('id', eid).maybeSingle();
+      if (again.data) data = again.data;
+    }
+
+    if (error && !data && !stash) return { success: false, message: error.message };
+    if (!data && !stash) return { success: false, message: 'Event not found.' };
+
+    let event = this.mapEvent(data || { id: eid });
+
+    if (stash) {
+      const keys = [
+        'title', 'description', 'category', 'date', 'time', 'end_date', 'end_time',
+        'timezone', 'location', 'venue_name', 'maps_url', 'capacity', 'visibility',
+        'is_free', 'price', 'contact_email', 'contact_phone', 'website', 'image',
+        'gallery', 'planning_data', 'share_token', 'organizer_id',
+      ];
+      keys.forEach((k) => {
+        if (stash[k] !== undefined && stash[k] !== null && stash[k] !== '') {
+          event[k] = stash[k];
+        }
+      });
+      // Empty strings / false still matter for some fields
+      if (typeof stash.is_free === 'boolean') event.is_free = stash.is_free;
+      if (stash.visibility) event.visibility = stash.visibility;
+      if (Array.isArray(stash.gallery)) event.gallery = stash.gallery;
+      if (stash.planning_data && typeof stash.planning_data === 'object') {
+        event.planning_data = stash.planning_data;
+      }
+    }
+
+    return { success: true, event };
   },
 
   async createEvent(payload, imageFile, galleryFiles = []) {
@@ -618,12 +676,28 @@ const EventifyDB = {
       public: 'Event updated — Public.',
     };
 
-    // So the next page shows the new values immediately (no stale read)
+    // So Edit + detail pages show the new values immediately (no stale read)
     try {
-      sessionStorage.setItem('eventify_just_saved', JSON.stringify({
+      const snapshot = {
+        ...payload,
         ...saved,
+        id: saved.id,
+        title: saved.title,
+        visibility: saved.visibility,
+        location: saved.location ?? payload.location,
+        category: saved.category ?? payload.category,
+        date: saved.date ?? payload.date,
+        time: saved.time ?? payload.time,
+        description: saved.description ?? payload.description,
+        price: saved.price ?? payload.price,
+        image: saved.image ?? payload.image,
+        share_token: saved.share_token || payload.share_token,
+        planning_data: payload.planning_data || {},
+        gallery: payload.gallery || [],
         at: Date.now(),
-      }));
+      };
+      sessionStorage.setItem('eventify_just_saved', JSON.stringify(snapshot));
+      sessionStorage.setItem('eventify_last_edit', JSON.stringify(snapshot));
     } catch (_) { /* ignore */ }
 
     return {
