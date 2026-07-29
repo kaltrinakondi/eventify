@@ -1932,25 +1932,37 @@ const EventPlanner = {
     };
   },
 
+  getVisibility() {
+    const active = document.querySelector('.visibility-btn.active')?.dataset?.visibility;
+    if (['public', 'private', 'invite_only'].includes(active)) return active;
+    const basic = document.getElementById('visibility_basic')?.value;
+    if (['public', 'private', 'invite_only'].includes(basic)) return basic;
+    const settings = document.getElementById('visibility')?.value;
+    if (['public', 'private', 'invite_only'].includes(settings)) return settings;
+    return 'public';
+  },
+
   collectPayload(isDraft) {
     const isFree = document.getElementById('is_free').checked;
     const category = this.getSelectedCategory();
+    let time = document.getElementById('time').value || '';
+    if (/^\d{2}:\d{2}$/.test(time)) time = `${time}:00`;
+    let endTime = document.getElementById('end_time').value || null;
+    if (endTime && /^\d{2}:\d{2}$/.test(endTime)) endTime = `${endTime}:00`;
     return {
       title: document.getElementById('title').value.trim(),
       description: document.getElementById('description').value.trim(),
       category,
       date: document.getElementById('date').value,
-      time: document.getElementById('time').value,
+      time,
       end_date: document.getElementById('end_date').value || document.getElementById('date').value,
-      end_time: document.getElementById('end_time').value || null,
+      end_time: endTime,
       timezone: document.getElementById('timezone').value,
       location: document.getElementById('location').value.trim(),
       venue_name: document.getElementById('venue_name').value.trim(),
       maps_url: document.getElementById('maps_url').value.trim(),
       capacity: parseInt(document.getElementById('capacity').value, 10) || 0,
-      visibility: document.getElementById('visibility_basic')?.value
-        || document.getElementById('visibility')?.value
-        || 'public',
+      visibility: this.getVisibility(),
       is_free: isFree,
       price: isFree ? 0 : (parseFloat(document.getElementById('price').value) || 0),
       contact_email: document.getElementById('contact_email').value.trim(),
@@ -2002,6 +2014,8 @@ const EventPlanner = {
     }
 
     const payload = this.collectPayload(isDraft);
+    // Always re-read active Public / Private / Invite Only button right before save
+    payload.visibility = this.getVisibility();
     const err = this.validate(payload, isDraft);
     if (err) {
       this.showAlert(err, 'error');
@@ -2037,7 +2051,12 @@ const EventPlanner = {
         this.renderGalleryPreviews();
         const galleryInput = document.getElementById('gallery');
         if (galleryInput) galleryInput.value = '';
+
+        // Lock UI to what the database actually saved
+        if (data.visibility) this.setVisibility(data.visibility);
         this.showAlert(isDraft ? 'Draft saved.' : data.message, 'success');
+        Eventify.showToast(data.message, 'success');
+
         if (data.share_token) this.shareToken = data.share_token;
         else if (!this.shareToken) this.shareToken = payload.share_token;
         this.refreshShareLinkUI();
@@ -2046,10 +2065,11 @@ const EventPlanner = {
           history.replaceState(null, '', `create-event.html?edit=${this.editId}`);
           this.updatePlannerHeader();
         }
-        // After a successful update, stay on planner for drafts / partial saves;
-        // only redirect to public page when fully publishing.
+        // After full publish/update, open detail with cache-bust so badge shows new visibility
         if (!isDraft && id && !data.partial) {
-          setTimeout(() => { window.location.href = `event.html?id=${id}`; }, 1200);
+          setTimeout(() => {
+            window.location.href = `event.html?id=${id}&_=${Date.now()}`;
+          }, 900);
         } else if (data.event_id && !this.editId) {
           this.editId = String(data.event_id);
           history.replaceState(null, '', `create-event.html?edit=${data.event_id}`);
@@ -2060,7 +2080,8 @@ const EventPlanner = {
           this.loadInviteRsvps();
         }
       } else {
-        this.showAlert(data.message || 'Save failed. If columns are missing, run database/event-planning-upgrade.sql in Supabase.', 'error');
+        this.showAlert(data.message || 'Save failed.', 'error');
+        Eventify.showToast(data.message || 'Save failed', 'error');
       }
     } catch (e) {
       this.showAlert(e.message || 'Failed to save event.', 'error');

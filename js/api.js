@@ -414,6 +414,15 @@ const EventifyDB = {
     }
 
     if (!payload.share_token) payload.share_token = this.makeShareToken();
+    if (payload.time && /^\d{2}:\d{2}$/.test(payload.time)) {
+      payload.time = `${payload.time}:00`;
+    }
+    if (payload.end_time && /^\d{2}:\d{2}$/.test(payload.end_time)) {
+      payload.end_time = `${payload.end_time}:00`;
+    }
+    payload.visibility = ['public', 'private', 'invite_only'].includes(payload.visibility)
+      ? payload.visibility
+      : 'public';
     const row = this.buildEventRow(payload, image);
     const { data, error } = await sb.from('events').insert(row).select('id, share_token').single();
     if (error) {
@@ -439,94 +448,205 @@ const EventifyDB = {
       return { success: false, message: 'Invalid event id.' };
     }
 
+    // Fresh auth — stale sessions cause RLS to silently apply 0 rows
+    const { data: authData, error: authErr } = await sb.auth.getUser();
+    if (authErr || !authData?.user) {
+      return { success: false, message: 'Please log in again, then update the event.' };
+    }
+    const uid = authData.user.id;
+
     try {
       if (imageFile) {
-        payload.image = await this.uploadEventImage(payload.organizer_id, imageFile);
+        payload.image = await this.uploadEventImage(payload.organizer_id || uid, imageFile);
       } else if (payload.clear_image) {
         payload.image = 'images/default-event.jpg';
       }
       const gallery = [...(payload.gallery || [])];
       for (const file of galleryFiles || []) {
-        gallery.push(await this.uploadEventImage(payload.organizer_id, file));
+        gallery.push(await this.uploadEventImage(payload.organizer_id || uid, file));
       }
       payload.gallery = gallery;
     } catch (err) {
       return { success: false, message: err.message };
     }
 
-    let update = this.sanitizeEventUpdate(this.buildEventRow(payload, payload.image));
-    delete update.organizer_id;
-    // Always persist visibility explicitly (Basics + Settings controls)
-    update.visibility = ['public', 'private', 'invite_only'].includes(payload.visibility)
+    const visibility = ['public', 'private', 'invite_only'].includes(payload.visibility)
       ? payload.visibility
       : 'public';
-    if (payload.clear_image && !imageFile) {
-      update.image = 'images/default-event.jpg';
-    }
 
-    let { data, error } = await sb
+    let time = payload.time || '';
+    if (/^\d{2}:\d{2}$/.test(time)) time = `${time}:00`;
+    let endTime = payload.end_time || null;
+    if (endTime && /^\d{2}:\d{2}$/.test(endTime)) endTime = `${endTime}:00`;
+
+    // --- Stage 1: core fields (must succeed) ---
+    const core = {
+      title: payload.title,
+      description: payload.description,
+      category: payload.category,
+      date: payload.date,
+      time,
+      location: payload.location,
+      price: payload.is_free ? 0 : (Number(payload.price) || 0),
+      is_free: !!payload.is_free,
+      visibility,
+    };
+    if (payload.image) core.image = payload.image;
+
+    // Prefer update without RETURNING first — some RLS setups hide RETURNING rows
+    let { error } = await sb
       .from('events')
-      .update(update)
+      .update(core)
       .eq('id', eid)
-      .select('id, share_token, visibility');
+      .eq('organizer_id', uid);
 
-    // Missing optional planner columns → retry core fields (still includes visibility)
-    if (error && /column|schema cache|planning_data|gallery|venue_name|end_date|share_token|timezone|maps_url|capacity|contact_/i.test(error.message || '')) {
-      const core = this.sanitizeEventUpdate(this.coreEventUpdate(update));
-      core.visibility = update.visibility;
-      ({ data, error } = await sb
-        .from('events')
-        .update(core)
-        .eq('id', eid)
-        .select('id, share_token, visibility'));
-      if (!error && data?.length) {
-        return {
-          success: true,
-          message: 'Event basics updated. Run database/event-planning-upgrade.sql in Supabase to save planner fields too.',
-          event_id: data[0].id,
-          share_token: data[0].share_token || payload.share_token,
-          visibility: data[0].visibility,
-          partial: true,
-        };
-      }
+    if (error) {
+      // Admin / edge case: retry without organizer filter (RLS still applies)
+      ({ error } = await sb.from('events').update(core).eq('id', eid));
     }
 
     if (error) {
       if (/visibility/i.test(error.message || '')) {
         return {
           success: false,
-          message: 'Visibility column missing. Run database/fix-visibility.sql in Supabase, then try again.',
-        };
-      }
-      if (/share_token/i.test(error.message || '')) {
-        return {
-          success: false,
-          message: 'Share links need a database upgrade. Run database/share-invite-rsvp.sql in Supabase, then try again.',
+          message: 'Visibility column issue. Run database/fix-visibility.sql in Supabase.',
         };
       }
       if (/invalid input syntax for type (date|time)/i.test(error.message || '')) {
-        return { success: false, message: 'Check date and time fields — they cannot be empty when saving.' };
+        return { success: false, message: 'Check date and time fields.' };
       }
       return { success: false, message: error.message };
     }
 
-    if (!data?.length) {
+    // Read back what was actually saved
+    let { data: rows, error: readErr } = await sb
+      .from('events')
+      .select('id, title, visibility, share_token, organizer_id')
+      .eq('id', eid)
+      .maybeSingle();
+
+    if (readErr) {
+      return { success: false, message: readErr.message };
+    }
+
+    // Normalize single object → array
+    rows = rows ? [rows] : [];
+
+    if (!rows.length) {
       return {
         success: false,
-        message: 'Update did not apply. Make sure you are logged in as the event organizer.',
+        message: 'Update blocked. Open the event via My Events → Edit while logged in as the host.',
       };
     }
 
+    // Confirm core fields stuck (title + visibility)
+    if (rows[0].title !== core.title || rows[0].visibility !== visibility) {
+      const { error: forceErr } = await sb.from('events').update(core).eq('id', eid);
+      if (forceErr) {
+        return { success: false, message: forceErr.message };
+      }
+      const { data: again } = await sb
+        .from('events')
+        .select('id, title, visibility, share_token')
+        .eq('id', eid)
+        .maybeSingle();
+      if (!again) {
+        return {
+          success: false,
+          message: 'Update blocked. Open the event via My Events → Edit while logged in as the host.',
+        };
+      }
+      rows = [again];
+    }
+
+    // Force visibility again if DB returned a different value
+    if (rows[0].visibility !== visibility) {
+      const { data: visRows, error: visErr } = await sb
+        .from('events')
+        .update({ visibility })
+        .eq('id', eid)
+        .select('id, visibility');
+      if (visErr) {
+        return { success: false, message: `Could not set visibility: ${visErr.message}` };
+      }
+      if (!visRows?.length || visRows[0].visibility !== visibility) {
+        return {
+          success: false,
+          message: 'Visibility did not save. Run database/fix-visibility.sql in Supabase, then try again.',
+        };
+      }
+    }
+
+    // --- Stage 2: extended / planner fields (best effort, never undo core) ---
+    const extended = this.sanitizeEventUpdate({
+      end_date: payload.end_date || payload.date || null,
+      end_time: endTime,
+      timezone: payload.timezone || 'UTC',
+      venue_name: payload.venue_name || '',
+      maps_url: payload.maps_url || '',
+      capacity: payload.capacity || 0,
+      contact_email: payload.contact_email || '',
+      contact_phone: payload.contact_phone || '',
+      website: payload.website || '',
+      gallery: payload.gallery || [],
+      planning_data: payload.planning_data || {},
+      ...(payload.share_token ? { share_token: payload.share_token } : {}),
+    });
+
+    if (Object.keys(extended).length) {
+      const { error: extErr } = await sb.from('events').update(extended).eq('id', eid);
+      if (extErr && !/column|schema cache/i.test(extErr.message || '')) {
+        // Non-column errors on extended fields — report but core already saved
+        return {
+          success: true,
+          partial: true,
+          message: `Basics saved (including ${visibility}), but some planner fields failed: ${extErr.message}`,
+          event_id: eid,
+          share_token: rows[0].share_token || payload.share_token,
+          visibility,
+        };
+      }
+    }
+
+    // --- Stage 3: verify from DB ---
+    const { data: verified, error: verifyErr } = await sb
+      .from('events')
+      .select('id, title, visibility, share_token, location, category, date, time')
+      .eq('id', eid)
+      .maybeSingle();
+
+    if (verifyErr || !verified) {
+      return {
+        success: true,
+        message: 'Update sent, but could not verify. Refresh and check the event.',
+        event_id: eid,
+        share_token: rows[0].share_token || payload.share_token,
+        visibility,
+      };
+    }
+
+    if (verified.visibility !== visibility) {
+      return {
+        success: false,
+        message: `Saved visibility is "${verified.visibility}" instead of "${visibility}". Run database/fix-visibility.sql.`,
+        event_id: verified.id,
+        visibility: verified.visibility,
+      };
+    }
+
+    const visMsg = {
+      private: 'Event updated — Private (only you can see it).',
+      invite_only: 'Event updated — Invite Only.',
+      public: 'Event updated — Public.',
+    };
+
     return {
       success: true,
-      message: data[0].visibility === 'private'
-        ? 'Event updated — now Private (only you can see it).'
-        : data[0].visibility === 'invite_only'
-          ? 'Event updated — now Invite Only.'
-          : 'Event updated successfully!',
-      event_id: data[0].id,
-      share_token: data[0].share_token || payload.share_token,
-      visibility: data[0].visibility,
+      message: visMsg[verified.visibility] || 'Event updated successfully!',
+      event_id: verified.id,
+      share_token: verified.share_token || payload.share_token,
+      visibility: verified.visibility,
+      verified,
     };
   },
 

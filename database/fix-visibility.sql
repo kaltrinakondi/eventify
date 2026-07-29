@@ -57,4 +57,16 @@ CREATE POLICY "events_select" ON events FOR SELECT USING (
   )
 );
 
+-- Explicit WITH CHECK so changing visibility always passes RLS
+DROP POLICY IF EXISTS "events_update" ON events;
+CREATE POLICY "events_update" ON events FOR UPDATE
+USING (
+  auth.uid() = organizer_id
+  OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+)
+WITH CHECK (
+  auth.uid() = organizer_id
+  OR EXISTS (SELECT 1 FROM profiles p WHERE p.id = auth.uid() AND p.role = 'admin')
+);
+
 NOTIFY pgrst, 'reload schema';
