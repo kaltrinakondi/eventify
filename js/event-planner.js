@@ -1948,7 +1948,9 @@ const EventPlanner = {
       venue_name: document.getElementById('venue_name').value.trim(),
       maps_url: document.getElementById('maps_url').value.trim(),
       capacity: parseInt(document.getElementById('capacity').value, 10) || 0,
-      visibility: document.getElementById('visibility').value || 'public',
+      visibility: document.getElementById('visibility_basic')?.value
+        || document.getElementById('visibility')?.value
+        || 'public',
       is_free: isFree,
       price: isFree ? 0 : (parseFloat(document.getElementById('price').value) || 0),
       contact_email: document.getElementById('contact_email').value.trim(),
@@ -2093,6 +2095,13 @@ const EventPlanner = {
     document.getElementById('maps_url').value = e.maps_url || '';
     document.getElementById('capacity').value = e.capacity || 0;
     this.setVisibility(e.visibility || 'public');
+    // Ensure both Basics buttons and Settings select match DB value
+    if (document.getElementById('visibility_basic')) {
+      document.getElementById('visibility_basic').value = e.visibility || 'public';
+    }
+    if (document.getElementById('visibility')) {
+      document.getElementById('visibility').value = e.visibility || 'public';
+    }
     document.getElementById('is_free').checked = e.is_free !== false && !(parseFloat(e.price) > 0);
     document.getElementById('price').value = e.price || 0;
     document.getElementById('price').disabled = document.getElementById('is_free').checked;

@@ -162,19 +162,38 @@ const EventifyDB = {
       let event = null;
       let error = null;
 
+      // Prefer base `events` table so visibility / planning columns are never missing
+      // (events_with_stats may be stale if the view wasn't recreated after upgrades).
       ({ data: event, error } = await sb
-        .from('events_with_stats')
+        .from('events')
         .select('*')
         .eq('id', eid)
         .maybeSingle());
 
-      // Fallback to base table (same RLS)
       if (!event && !error) {
         ({ data: event, error } = await sb
-          .from('events')
+          .from('events_with_stats')
           .select('*')
           .eq('id', eid)
           .maybeSingle());
+      } else if (event) {
+        // Enrich with stats when available
+        const { data: stats } = await sb
+          .from('events_with_stats')
+          .select('organizer_name, organizer_email, rsvp_count, maybe_count, avg_rating, review_count')
+          .eq('id', eid)
+          .maybeSingle();
+        if (stats) {
+          event = {
+            ...event,
+            organizer_name: stats.organizer_name || event.organizer_name,
+            organizer_email: stats.organizer_email || event.organizer_email,
+            rsvp_count: stats.rsvp_count,
+            maybe_count: stats.maybe_count,
+            avg_rating: stats.avg_rating,
+            review_count: stats.review_count,
+          };
+        }
       }
 
       if (error || !event) {
@@ -186,6 +205,8 @@ const EventifyDB = {
       }
 
       const mapped = this.mapEvent(event);
+      // Normalize visibility for older rows
+      mapped.visibility = mapped.visibility || 'public';
       if (!this.canViewEvent(mapped, params.userId, params.userEmail)) {
         const vis = mapped.visibility || 'public';
         return {
@@ -435,6 +456,10 @@ const EventifyDB = {
 
     let update = this.sanitizeEventUpdate(this.buildEventRow(payload, payload.image));
     delete update.organizer_id;
+    // Always persist visibility explicitly (Basics + Settings controls)
+    update.visibility = ['public', 'private', 'invite_only'].includes(payload.visibility)
+      ? payload.visibility
+      : 'public';
     if (payload.clear_image && !imageFile) {
       update.image = 'images/default-event.jpg';
     }
@@ -443,28 +468,36 @@ const EventifyDB = {
       .from('events')
       .update(update)
       .eq('id', eid)
-      .select('id, share_token');
+      .select('id, share_token, visibility');
 
-    // Missing planning columns → retry with core fields so Basics edits still save
-    if (error && /column|schema cache|planning_data|gallery|venue_name|end_date|share_token|visibility|is_free/i.test(error.message || '')) {
+    // Missing optional planner columns → retry core fields (still includes visibility)
+    if (error && /column|schema cache|planning_data|gallery|venue_name|end_date|share_token|timezone|maps_url|capacity|contact_/i.test(error.message || '')) {
       const core = this.sanitizeEventUpdate(this.coreEventUpdate(update));
+      core.visibility = update.visibility;
       ({ data, error } = await sb
         .from('events')
         .update(core)
         .eq('id', eid)
-        .select('id, share_token'));
+        .select('id, share_token, visibility'));
       if (!error && data?.length) {
         return {
           success: true,
           message: 'Event basics updated. Run database/event-planning-upgrade.sql in Supabase to save planner fields too.',
           event_id: data[0].id,
           share_token: data[0].share_token || payload.share_token,
+          visibility: data[0].visibility,
           partial: true,
         };
       }
     }
 
     if (error) {
+      if (/visibility/i.test(error.message || '')) {
+        return {
+          success: false,
+          message: 'Visibility column missing. Run database/fix-visibility.sql in Supabase, then try again.',
+        };
+      }
       if (/share_token/i.test(error.message || '')) {
         return {
           success: false,
@@ -486,9 +519,14 @@ const EventifyDB = {
 
     return {
       success: true,
-      message: 'Event updated successfully!',
+      message: data[0].visibility === 'private'
+        ? 'Event updated — now Private (only you can see it).'
+        : data[0].visibility === 'invite_only'
+          ? 'Event updated — now Invite Only.'
+          : 'Event updated successfully!',
       event_id: data[0].id,
       share_token: data[0].share_token || payload.share_token,
+      visibility: data[0].visibility,
     };
   },
 
