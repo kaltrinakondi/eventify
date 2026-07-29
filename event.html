@@ -55,7 +55,7 @@
   <script src="js/api.js?v=15"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js?v=2"></script>
-  <script src="js/app.js?v=18"></script>
+  <script src="js/app.js?v=19"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
       await Eventify.init();
@@ -158,7 +158,7 @@
                   </button>
                   <button type="button" class="btn btn-sm btn-outline" id="detail-export-rsvps">Export CSV</button>
                 </div>
-                <a href="create-event.html?edit=${e.id}" class="btn btn-sm btn-outline btn-block" style="margin-top:10px;">Open planner</a>
+                <a href="create-event.html?edit=${e.id}" class="btn btn-sm btn-outline btn-block" style="margin-top:10px;" onclick="try{sessionStorage.setItem('eventify_edit_id','${e.id}')}catch(e){}">Edit event</a>
                 <div id="detail-invite-votes" style="margin-top:14px;"></div>
               </div>` : ''}
             </div>

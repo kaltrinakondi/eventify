@@ -64,7 +64,15 @@ const EventPlanner = {
     this.bindShareInvite();
 
     const params = new URLSearchParams(window.location.search);
-    const editRaw = params.get('edit') || params.get('id');
+    // Some static servers (e.g. `serve` cleanUrls) strip ?edit= on redirect —
+    // fall back to sessionStorage stashed by the Edit button.
+    let editRaw = params.get('edit') || params.get('id');
+    if (!editRaw) {
+      try { editRaw = sessionStorage.getItem('eventify_edit_id'); } catch (_) { /* ignore */ }
+    }
+    if (editRaw) {
+      try { sessionStorage.removeItem('eventify_edit_id'); } catch (_) { /* ignore */ }
+    }
     const editNum = Number(editRaw);
     this.editId = (Number.isFinite(editNum) && editNum > 0) ? String(editNum) : null;
 

@@ -734,7 +734,7 @@ const Eventify = {
             <a href="event.html?id=${event.id}" class="btn btn-sm btn-secondary">Details</a>
             ${showFavorite ? `<button class="btn btn-sm btn-outline favorite-btn ${favClass}" data-id="${event.id}" title="Favorite">${event.isFavorite ? '♥' : '♡'}</button>` : ''}
             ${showRsvp ? `<button class="btn btn-sm btn-primary rsvp-btn" data-id="${event.id}">RSVP</button>` : ''}
-            ${showActions ? `<a href="create-event.html?edit=${event.id}" class="btn btn-sm btn-outline">Edit</a>` : ''}
+            ${showActions ? `<a href="create-event.html?edit=${event.id}" class="btn btn-sm btn-outline" onclick="try{sessionStorage.setItem('eventify_edit_id','${event.id}')}catch(e){}">Edit</a>` : ''}
             ${showDelete ? `<button class="btn btn-sm btn-danger delete-btn" data-id="${event.id}">Delete</button>` : ''}
           </div>
         </div>

@@ -8,6 +8,9 @@
     (function () {
       var params = new URLSearchParams(location.search);
       var id = params.get('id') || params.get('edit');
+      if (id) {
+        try { sessionStorage.setItem('eventify_edit_id', String(id)); } catch (e) {}
+      }
       location.replace(id ? ('create-event.html?edit=' + encodeURIComponent(id)) : 'create-event.html');
     })();
   </script>
