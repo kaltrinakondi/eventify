@@ -207,6 +207,22 @@ const EventifyDB = {
       const mapped = this.mapEvent(event);
       // Normalize visibility for older rows
       mapped.visibility = mapped.visibility || 'public';
+
+      // Prefer values just saved (avoids stale replica / cache right after Update)
+      try {
+        const raw = sessionStorage.getItem('eventify_just_saved');
+        if (raw) {
+          const stash = JSON.parse(raw);
+          if (stash && Number(stash.id) === Number(eid) && (Date.now() - (stash.at || 0)) < 120000) {
+            ['title', 'description', 'category', 'date', 'time', 'location', 'visibility', 'price', 'image', 'share_token']
+              .forEach((k) => {
+                if (stash[k] != null && stash[k] !== '') mapped[k] = stash[k];
+              });
+            sessionStorage.removeItem('eventify_just_saved');
+          }
+        }
+      } catch (_) { /* ignore */ }
+
       if (!this.canViewEvent(mapped, params.userId, params.userEmail)) {
         const vis = mapped.visibility || 'public';
         return {
@@ -491,17 +507,34 @@ const EventifyDB = {
     };
     if (payload.image) core.image = payload.image;
 
-    // Use RETURNING from the same write (primary) — a follow-up SELECT can hit a stale replica
-    let { data: rows, error } = await sb
-      .from('events')
-      .update(core)
-      .eq('id', eid)
-      .eq('organizer_id', uid)
-      .select('id, title, visibility, share_token, location, category, date, time');
+    let saved = null;
+    let error = null;
 
-    if (error) {
-      // Missing is_free column → retry without it
-      if (/is_free|column|schema cache/i.test(error.message || '')) {
+    // Preferred path: SECURITY DEFINER RPC (reliable even with tricky RLS)
+    {
+      const rpcPatch = { ...core };
+      const { data: rpcData, error: rpcErr } = await sb.rpc('save_my_event', {
+        p_id: eid,
+        p_patch: rpcPatch,
+      });
+      if (!rpcErr && rpcData) {
+        saved = typeof rpcData === 'string' ? JSON.parse(rpcData) : rpcData;
+      } else if (rpcErr && !/function|schema cache|does not exist|Could not find/i.test(rpcErr.message || '')) {
+        error = rpcErr;
+      }
+      // If function missing → fall through to direct table update
+    }
+
+    if (!saved && !error) {
+      let rows = null;
+      ({ data: rows, error } = await sb
+        .from('events')
+        .update(core)
+        .eq('id', eid)
+        .eq('organizer_id', uid)
+        .select('id, title, visibility, share_token, location, category, date, time, description, price, image, organizer_id'));
+
+      if (error && /is_free|column|schema cache/i.test(error.message || '')) {
         const fallback = { ...core };
         delete fallback.is_free;
         ({ data: rows, error } = await sb
@@ -509,23 +542,24 @@ const EventifyDB = {
           .update(fallback)
           .eq('id', eid)
           .eq('organizer_id', uid)
-          .select('id, title, visibility, share_token, location, category, date, time'));
+          .select('id, title, visibility, share_token, location, category, date, time, description, price, image, organizer_id'));
       }
-    }
 
-    if (!error && (!rows || !rows.length)) {
-      ({ data: rows, error } = await sb
-        .from('events')
-        .update(core)
-        .eq('id', eid)
-        .select('id, title, visibility, share_token, location, category, date, time'));
+      if (!error && (!rows || !rows.length)) {
+        ({ data: rows, error } = await sb
+          .from('events')
+          .update(core)
+          .eq('id', eid)
+          .select('id, title, visibility, share_token, location, category, date, time, description, price, image, organizer_id'));
+      }
+      if (rows?.[0]) saved = rows[0];
     }
 
     if (error) {
       if (/visibility/i.test(error.message || '')) {
         return {
           success: false,
-          message: 'Visibility column issue. Run database/fix-visibility.sql in Supabase.',
+          message: 'Database visibility policy issue. Run database/fix-event-updates.sql in Supabase.',
         };
       }
       if (/invalid input syntax for type (date|time)/i.test(error.message || '')) {
@@ -534,30 +568,17 @@ const EventifyDB = {
       return { success: false, message: error.message };
     }
 
-    if (!rows?.length) {
+    if (!saved) {
       return {
         success: false,
-        message: 'Update blocked. Open the event via My Events → Edit while logged in as the host.',
+        message: 'Update blocked by database. Run database/fix-event-updates.sql in Supabase, then try again.',
       };
-    }
-
-    let saved = rows[0];
-
-    // If RETURNING somehow lagged on visibility, force one more write+return
-    if (saved.visibility !== visibility || saved.title !== core.title) {
-      const { data: forced, error: forceErr } = await sb
-        .from('events')
-        .update(core)
-        .eq('id', eid)
-        .select('id, title, visibility, share_token, location, category, date, time');
-      if (forceErr) return { success: false, message: forceErr.message };
-      if (forced?.[0]) saved = forced[0];
     }
 
     if (saved.title !== core.title || saved.visibility !== visibility) {
       return {
         success: false,
-        message: 'Could not save changes. Try again, or re-login and edit from My Events.',
+        message: 'Database did not keep the new values. Run database/fix-event-updates.sql in Supabase.',
         event_id: saved.id,
         visibility: saved.visibility,
       };
@@ -596,6 +617,14 @@ const EventifyDB = {
       invite_only: 'Event updated — Invite Only.',
       public: 'Event updated — Public.',
     };
+
+    // So the next page shows the new values immediately (no stale read)
+    try {
+      sessionStorage.setItem('eventify_just_saved', JSON.stringify({
+        ...saved,
+        at: Date.now(),
+      }));
+    } catch (_) { /* ignore */ }
 
     return {
       success: true,
