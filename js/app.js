@@ -31,10 +31,12 @@ function safeAuthRedirect(raw) {
 const Eventify = {
   currentUser: null,
   _booted: false,
+  _bootPromise: null,
   _authUnsub: null,
 
   async init() {
-    if (this._booted) {
+    if (this._bootPromise) {
+      await this._bootPromise;
       await this.checkSession();
       if (!this.enforceAuthGate()) return;
       this.setupNavbar();
@@ -45,6 +47,12 @@ const Eventify = {
       this.setupFeatureExtras();
       return;
     }
+
+    this._bootPromise = this._boot();
+    await this._bootPromise;
+  },
+
+  async _boot() {
     this._booted = true;
 
     if (typeof Theme !== 'undefined') Theme.init();
@@ -496,7 +504,8 @@ const Eventify = {
 
   requireAuth(redirectUrl) {
     if (!this.currentUser) {
-      const target = safeAuthRedirect(redirectUrl || normalizePageName(window.location.pathname.split('/').pop()));
+      const fallback = normalizePageName(window.location.pathname.split('/').pop()) + (window.location.search || '');
+      const target = safeAuthRedirect(redirectUrl || fallback);
       window.location.href = `login.html?redirect=${encodeURIComponent(target)}`;
       return false;
     }

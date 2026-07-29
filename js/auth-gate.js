@@ -75,6 +75,7 @@
   }
 
   if (!hasSession() && !PUBLIC[page]) {
-    location.replace('login.html?redirect=' + encodeURIComponent(safeRedirectTarget(page)));
+    var redirectTarget = page + (location.search || '');
+    location.replace('login.html?redirect=' + encodeURIComponent(safeRedirectTarget(redirectTarget)));
   }
 })();

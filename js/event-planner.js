@@ -39,7 +39,9 @@ const EventPlanner = {
 
   async init() {
     await Eventify.init();
-    if (!Eventify.requireAuth('create-event.html')) return;
+    // Keep ?edit=id (and other query params) through login redirect
+    const returnTo = `create-event.html${window.location.search || ''}`;
+    if (!Eventify.requireAuth(returnTo)) return;
 
     document.getElementById('category').innerHTML =
       '<option value="">Select category</option>' + renderCategoryOptions();
@@ -62,17 +64,28 @@ const EventPlanner = {
     this.bindShareInvite();
 
     const params = new URLSearchParams(window.location.search);
-    this.editId = params.get('edit');
+    const editRaw = params.get('edit') || params.get('id');
+    const editNum = Number(editRaw);
+    this.editId = (Number.isFinite(editNum) && editNum > 0) ? String(editNum) : null;
+
     if (this.editId) {
       document.getElementById('planner-title').textContent = 'Edit Event';
       document.getElementById('btn-publish').textContent = 'Update Event';
-      await this.loadEvent(this.editId);
+      const loaded = await this.loadEvent(this.editId);
+      if (!loaded) {
+        // Do NOT fall through to a blank "create" form — that creates a duplicate event
+        this.showAlert('Could not load this event for editing. Returning to My Events…', 'error');
+        setTimeout(() => { window.location.href = 'my-events.html'; }, 1600);
+        return;
+      }
     } else {
       this.shareToken = EventifyDB.makeShareToken();
       this.seedDefaultBudget();
       this.refreshAI();
       this.renderAll();
       this.refreshShareLinkUI();
+      // Apply category presets only when creating (never when editing)
+      this.applyUrlCategoryPreset();
     }
 
     this.updatePlannerHeader();
@@ -194,7 +207,15 @@ const EventPlanner = {
       document.querySelector('.planner-tab[data-tab="ai"]')?.click();
     });
 
+    // Category URL presets are applied in init() only for create mode
+    this.syncCustomCategoryUI();
+    this.refreshCategoryToolkit({ scroll: false });
+    this.updatePlannerHeader();
+  },
+
+  applyUrlCategoryPreset() {
     const params = new URLSearchParams(window.location.search);
+    if (params.get('edit') || params.get('id')) return;
     const presetCat = params.get('category');
     const isCustom = params.get('custom') === '1' || presetCat === 'Custom' || presetCat === 'Add More';
     if (isCustom && document.getElementById('category')) {
@@ -1968,6 +1989,16 @@ const EventPlanner = {
 
   async save(isDraft) {
     const btn = isDraft ? document.getElementById('btn-save-draft') : document.getElementById('btn-publish');
+    if (!btn) return;
+
+    // Re-read edit id from URL in case state was lost
+    if (!this.editId) {
+      const q = new URLSearchParams(window.location.search);
+      const raw = q.get('edit') || q.get('id');
+      const n = Number(raw);
+      if (Number.isFinite(n) && n > 0) this.editId = String(n);
+    }
+
     const payload = this.collectPayload(isDraft);
     const err = this.validate(payload, isDraft);
     if (err) {
@@ -2009,12 +2040,16 @@ const EventPlanner = {
         else if (!this.shareToken) this.shareToken = payload.share_token;
         this.refreshShareLinkUI();
         const id = data.event_id || this.editId;
+        if (this.editId) {
+          history.replaceState(null, '', `create-event.html?edit=${this.editId}`);
+          this.updatePlannerHeader();
+        }
         // After a successful update, stay on planner for drafts / partial saves;
         // only redirect to public page when fully publishing.
         if (!isDraft && id && !data.partial) {
           setTimeout(() => { window.location.href = `event.html?id=${id}`; }, 1200);
         } else if (data.event_id && !this.editId) {
-          this.editId = data.event_id;
+          this.editId = String(data.event_id);
           history.replaceState(null, '', `create-event.html?edit=${data.event_id}`);
           this.updatePlannerHeader();
           this.refreshShareLinkUI();
@@ -2155,20 +2190,27 @@ const EventPlanner = {
     const data = await EventifyDB.getEventForEdit(id);
     if (!data.success) {
       this.showAlert(data.message || 'Could not load event for editing.', 'error');
-      return;
+      this.editId = null;
+      return false;
     }
-    if (data.event.organizer_id !== Eventify.currentUser.id && Eventify.currentUser.role !== 'admin') {
+    const hostId = String(data.event.organizer_id || '');
+    const me = String(Eventify.currentUser?.id || '');
+    if (hostId !== me && Eventify.currentUser?.role !== 'admin') {
       this.showAlert('Not authorized to edit this event.', 'error');
+      this.editId = null;
       setTimeout(() => { window.location.href = 'my-events.html'; }, 1500);
-      return;
+      return false;
     }
     this.editId = String(data.event.id);
     this.hydrateFromEvent(data.event);
+    // Keep URL canonical so refresh stays in edit mode
+    history.replaceState(null, '', `create-event.html?edit=${this.editId}`);
     const synced = await EventifyDB.ensureShareToken(this.editId, data.event.share_token || this.shareToken);
     if (synced.success) {
       this.shareToken = synced.share_token;
       this.refreshShareLinkUI();
     }
+    return true;
   },
 
   bindPremium() {
