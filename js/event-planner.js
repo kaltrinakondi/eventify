@@ -2013,12 +2013,19 @@ const EventPlanner = {
     const btn = isDraft ? document.getElementById('btn-save-draft') : document.getElementById('btn-publish');
     if (!btn) return;
 
-    // Re-read edit id from URL in case state was lost
+    // Re-read edit id from URL / session in case state was lost (cached page, redirect)
     if (!this.editId) {
       const q = new URLSearchParams(window.location.search);
-      const raw = q.get('edit') || q.get('id');
+      let raw = q.get('edit') || q.get('id');
+      if (!raw) {
+        try { raw = sessionStorage.getItem('eventify_edit_id'); } catch (_) { /* ignore */ }
+      }
       const n = Number(raw);
       if (Number.isFinite(n) && n > 0) this.editId = String(n);
+    }
+    // Keep edit id sticky for this session so Update never creates a new event
+    if (this.editId) {
+      try { sessionStorage.setItem('eventify_edit_id', String(this.editId)); } catch (_) { /* ignore */ }
     }
 
     const payload = this.collectPayload(isDraft);
@@ -2078,8 +2085,9 @@ const EventPlanner = {
         // Stay on planner for drafts/partial; otherwise open detail after a short pause
         if (!isDraft && id && !data.partial) {
           setTimeout(() => {
-            window.location.href = `event.html?id=${id}&_=${Date.now()}`;
-          }, 700);
+            // Hard navigation so the detail page always shows what was just saved
+            window.location.replace(`event.html?id=${id}&saved=1&_=${Date.now()}`);
+          }, 500);
         } else if (data.event_id && !this.editId) {
           this.editId = String(data.event_id);
           history.replaceState(null, '', `create-event.html?edit=${data.event_id}`);
