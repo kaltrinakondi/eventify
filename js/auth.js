@@ -28,8 +28,9 @@ const Auth = {
           window.location.href = target;
         } else {
           alert.className = 'alert alert-error';
-          alert.textContent = data.message === 'Email not confirmed'
-            ? 'Please confirm your email before signing in. Check your inbox for the confirmation link.'
+          const msg = (data.message || '').toLowerCase();
+          alert.textContent = (msg.includes('confirm') || msg.includes('verified') || msg.includes('verification'))
+            ? 'Please confirm your email before signing in. Check your inbox for the verification link.'
             : data.message;
           alert.classList.remove('hidden');
         }
@@ -53,19 +54,39 @@ const Auth = {
       btn.disabled = true;
       btn.textContent = 'Creating account...';
       try {
+        const email = form.email.value.trim();
         const data = await this.register(
-          form.name.value.trim(), form.email.value.trim(),
+          form.name.value.trim(), email,
           form.password.value, form.confirm_password.value
         );
         alert.className = `alert ${data.success ? 'alert-success' : 'alert-error'}`;
         alert.textContent = data.message;
         alert.classList.remove('hidden');
-        if (data.success && data.user) {
+
+        if (data.success && data.needsEmailConfirm) {
+          // Stay on page — show verify instructions + resend
+          const box = document.getElementById('verify-email-box');
+          if (box) {
+            box.classList.remove('hidden');
+            const emailEl = document.getElementById('verify-email-address');
+            if (emailEl) emailEl.textContent = email;
+          }
+          form.classList.add('hidden');
+          document.getElementById('resend-verify-btn')?.addEventListener('click', async () => {
+            const resendBtn = document.getElementById('resend-verify-btn');
+            if (resendBtn) resendBtn.disabled = true;
+            const res = await EventifyDB.resendSignupEmail(email);
+            alert.className = `alert ${res.success ? 'alert-success' : 'alert-error'}`;
+            alert.textContent = res.message;
+            alert.classList.remove('hidden');
+            if (resendBtn) resendBtn.disabled = false;
+          }, { once: true });
+        } else if (data.success && data.user) {
           const params = new URLSearchParams(window.location.search);
           const target = typeof safeAuthRedirect === 'function'
             ? safeAuthRedirect(params.get('redirect') || 'index.html')
             : (params.get('redirect') || 'index.html');
-          setTimeout(() => { window.location.href = target; }, 1500);
+          setTimeout(() => { window.location.href = target; }, 1200);
         }
       } catch (err) {
         alert.className = 'alert alert-error';
@@ -127,4 +148,15 @@ document.addEventListener('DOMContentLoaded', () => {
   Auth.initRegisterForm();
   Auth.initForgotForm();
   Auth.initResetForm();
+
+  // After email verification redirect
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('confirmed') === '1' || params.get('verified') === '1') {
+    const alert = document.getElementById('form-alert');
+    if (alert) {
+      alert.className = 'alert alert-success';
+      alert.textContent = 'Email verified! You can log in now.';
+      alert.classList.remove('hidden');
+    }
+  }
 });

@@ -63,17 +63,45 @@ const EventifyDB = {
   },
 
   async register(name, email, password) {
+    const redirectTo = `${window.location.origin}/verify-email.html`;
     const { data, error } = await sb.auth.signUp({
       email,
       password,
-      options: { data: { name } },
+      options: {
+        data: { name },
+        emailRedirectTo: redirectTo,
+      },
     });
     if (error) return { success: false, message: error.message };
+
+    // Email confirmation enabled → no session until user clicks the email link
     if (!data.session) {
-      return { success: true, message: 'Account created! Check your email to confirm, then sign in.', user: null };
+      return {
+        success: true,
+        needsEmailConfirm: true,
+        message: 'Account created! Check your email and click the verification link, then sign in.',
+        user: null,
+      };
     }
+
+    // Confirmation disabled in Supabase → signed in immediately
     const user = await this.getSessionUser();
-    return { success: true, message: 'Account created successfully!', user };
+    return {
+      success: true,
+      needsEmailConfirm: false,
+      message: 'Account created successfully!',
+      user,
+    };
+  },
+
+  async resendSignupEmail(email) {
+    const { error } = await sb.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/verify-email.html` },
+    });
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: 'Verification email sent again. Check your inbox.' };
   },
 
   async logout() {
@@ -103,7 +131,13 @@ const EventifyDB = {
 
   mapEvent(row) {
     if (!row) return row;
-    return { ...row, organizer_name: row.organizer_name || row.profiles?.name };
+    const dateRaw = row.date != null ? String(row.date) : '';
+    const dateMatch = dateRaw.match(/^(\d{4}-\d{2}-\d{2})/);
+    return {
+      ...row,
+      date: dateMatch ? dateMatch[1] : dateRaw,
+      organizer_name: row.organizer_name || row.profiles?.name,
+    };
   },
 
   makeShareToken() {

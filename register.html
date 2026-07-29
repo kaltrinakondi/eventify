@@ -51,8 +51,15 @@
             <label for="confirm_password">Confirm Password</label>
             <input type="password" id="confirm_password" name="confirm_password" required placeholder="Confirm your password">
           </div>
+          <p class="card-desc" style="margin-bottom:14px;">We will send a verification link to your email after you create an account.</p>
           <button type="submit" class="btn btn-primary btn-block btn-lg">Create Account</button>
         </form>
+        <div id="verify-email-box" class="hidden" style="text-align:center;padding:8px 0 4px;">
+          <p style="margin-bottom:12px;">We sent a verification link to<br><strong id="verify-email-address"></strong></p>
+          <p class="card-desc" style="margin-bottom:16px;">Open your inbox, click the link, then come back to log in.</p>
+          <button type="button" class="btn btn-outline btn-block" id="resend-verify-btn">Resend email</button>
+          <a href="login.html" class="btn btn-primary btn-block" style="margin-top:10px;">Go to Login</a>
+        </div>
         <div class="form-footer">
           Already have an account? <a href="login.html">Login</a>
         </div>
@@ -68,10 +75,10 @@
 
   <script src="js/vendor/supabase.js"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/api.js?v=14"></script>
+  <script src="js/api.js?v=19"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
-  <script src="js/app.js?v=18"></script>
-  <script src="js/auth.js"></script>
+  <script src="js/app.js?v=20"></script>
+  <script src="js/auth.js?v=2"></script>
 </body>
 </html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Email - Eventify</title>
+  <link rel="stylesheet" href="css/style.css?v=54">
+  <link rel="stylesheet" href="css/responsive.css?v=9">
+  <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js?v=5"></script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="images/app-icon.png">
+  <meta name="theme-color" content="#4b245d">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a href="index.html" class="logo"><span class="logo-icon">E</span> Eventify</a>
+      <div class="nav-links" id="nav-links">
+        <div class="mobile-auth" id="mobile-auth"></div>
+      </div>
+      <div class="nav-auth" id="nav-auth">
+        <a href="login.html" class="btn btn-sm btn-outline">Log In</a>
+        <a href="register.html" class="btn btn-sm btn-primary">Sign Up</a>
+      </div>
+      <button class="hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <section class="form-section">
+    <div class="container">
+      <div class="form-card" style="text-align:center;">
+        <h2>Verifying your email…</h2>
+        <p class="subtitle" id="verify-status">Please wait a moment.</p>
+        <div id="form-alert" class="alert hidden"></div>
+        <a href="login.html" class="btn btn-primary btn-block" style="margin-top:16px;">Continue to Login</a>
+      </div>
+    </div>
+  </section>
+
+  <script src="js/vendor/supabase.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/api.js?v=19"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/features.js"></script>
+  <script src="js/app.js?v=20"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      await Eventify.init();
+      const status = document.getElementById('verify-status');
+      const alert = document.getElementById('form-alert');
+
+      // Supabase may put tokens in the URL hash after clicking the email link
+      const hash = window.location.hash || '';
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const type = params.get('type') || new URLSearchParams(window.location.search).get('type');
+      const errorDesc = params.get('error_description') || new URLSearchParams(window.location.search).get('error_description');
+
+      if (errorDesc) {
+        status.textContent = 'Verification failed.';
+        alert.className = 'alert alert-error';
+        alert.textContent = decodeURIComponent(errorDesc.replace(/\+/g, ' '));
+        alert.classList.remove('hidden');
+        return;
+      }
+
+      // Wait briefly for Supabase client to pick up the session from the URL
+      await new Promise((r) => setTimeout(r, 600));
+      const { data: { session } } = await sb.auth.getSession();
+
+      if (session?.user) {
+        status.textContent = 'Email verified!';
+        alert.className = 'alert alert-success';
+        alert.textContent = 'Your email is confirmed. You can use Eventify now.';
+        alert.classList.remove('hidden');
+        setTimeout(() => { window.location.href = 'index.html'; }, 1600);
+        return;
+      }
+
+      status.textContent = type === 'signup' || type === 'email'
+        ? 'If you just clicked the link, try logging in.'
+        : 'Open the verification link from your email, or log in if you already confirmed.';
+      alert.className = 'alert alert-success';
+      alert.textContent = 'When your email is verified, log in with your password.';
+      alert.classList.remove('hidden');
+    });
+  </script>
+</body>
+</html>

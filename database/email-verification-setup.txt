@@ -1,0 +1,8 @@
+-- Optional notes for email verification (no SQL required).
+-- In Supabase Dashboard:
+-- 1) Authentication → Providers → Email → Enable "Confirm email"
+-- 2) Authentication → URL Configuration:
+--    Site URL: https://eventify-olive.vercel.app
+--    Redirect URLs (add both):
+--      https://eventify-olive.vercel.app/verify-email.html
+--      http://localhost:5500/verify-email.html

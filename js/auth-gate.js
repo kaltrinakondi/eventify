@@ -7,7 +7,7 @@
     'register.html': true,
     'forgot-password.html': true,
     'reset-password.html': true,
-    'invite.html': true,
+    'verify-email.html': true,
     'organizer.html': true,
     'events.html': true,
     'event.html': true,

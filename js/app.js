@@ -1,5 +1,5 @@
 const PUBLIC_PAGES = [
-  'index.html', 'login.html', 'register.html', 'forgot-password.html', 'reset-password.html',
+  'index.html', 'login.html', 'register.html', 'forgot-password.html', 'reset-password.html', 'verify-email.html',
   'invite.html', 'organizer.html', 'events.html', 'event.html', 'about.html', 'contact.html', 'calendar.html',
 ];
 

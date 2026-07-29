@@ -1711,13 +1711,16 @@ h4 { font-size: 1.25rem; }
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 4px;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: var(--transition);
   position: relative;
   font-weight: 500;
-  min-height: 60px;
+  min-height: 72px;
+  padding: 6px 4px 8px;
+  border: 1px solid transparent;
 }
 
 .calendar-day:hover {
@@ -1738,20 +1741,102 @@ h4 { font-size: 1.25rem; }
   background: rgba(var(--primary-rgb), 0.15);
   color: var(--primary);
   font-weight: 700;
+  border-color: rgba(var(--primary-rgb), 0.35);
+}
+
+.calendar-day.has-events {
+  background: rgba(var(--primary-rgb), 0.06);
+  border-color: rgba(var(--primary-rgb), 0.22);
+}
+
+.calendar-day.today.has-events {
+  background: var(--primary);
+  border-color: transparent;
+}
+
+.calendar-day.selected.has-events {
+  background: rgba(var(--primary-rgb), 0.18);
+}
+
+.calendar-day .cal-day-num {
+  line-height: 1.2;
+  font-size: 0.95rem;
 }
 
 .calendar-day.has-events::after {
   content: '';
-  width: 6px;
-  height: 6px;
-  background: var(--secondary);
+  width: 7px;
+  height: 7px;
+  background: var(--secondary, #c45c26);
   border-radius: 50%;
   position: absolute;
-  bottom: 8px;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .calendar-day.today.has-events::after {
   background: #fff;
+}
+
+.cal-event-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--secondary, #c45c26);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.calendar-day.today .cal-event-badge {
+  background: #fff;
+  color: var(--primary);
+}
+
+.cal-event-chip {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  padding: 2px 4px;
+  border-radius: 4px;
+  background: rgba(var(--primary-rgb), 0.12);
+  color: var(--primary);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.calendar-day.today .cal-event-chip {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+}
+
+.cal-event-chip .cal-more {
+  margin-left: 2px;
+  opacity: 0.85;
+}
+
+html[data-theme="dark"] .calendar-day.has-events {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html[data-theme="dark"] .cal-event-chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: #f0e6ff;
 }
 
 .calendar-events {

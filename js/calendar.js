@@ -3,7 +3,7 @@ const Calendar = {
   selectedDate: null,
   events: [],
 
-  init() {
+  async init() {
     this.grid = document.getElementById('calendar-grid');
     this.monthLabel = document.getElementById('calendar-month');
     this.eventsContainer = document.getElementById('calendar-day-events');
@@ -11,6 +11,10 @@ const Calendar = {
     this.nextBtn = document.getElementById('cal-next');
 
     if (!this.grid) return;
+
+    if (typeof Eventify !== 'undefined' && Eventify.init) {
+      await Eventify.init();
+    }
 
     this.prevBtn?.addEventListener('click', () => {
       this.currentDate.setMonth(this.currentDate.getMonth() - 1);
@@ -22,20 +26,45 @@ const Calendar = {
       this.render();
     });
 
-    this.loadEvents().then(() => this.render());
+    await this.loadEvents();
+    this.render();
+
+    // Auto-open today if it has events, else first event day in this month
+    const today = new Date();
+    const todayStr = this.formatDateStr(today.getFullYear(), today.getMonth(), today.getDate());
+    if (this.getEventsForDate(todayStr).length) {
+      this.selectedDate = todayStr;
+      this.render();
+      this.showDayEvents(todayStr);
+    }
+  },
+
+  eventDateKey(event) {
+    const raw = event?.date ?? '';
+    const s = String(raw);
+    // Supports "2026-12-23", "2026-12-23T00:00:00", etc.
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+    return m ? m[1] : s.slice(0, 10);
   },
 
   async loadEvents() {
     try {
-      const data = await Eventify.fetchEvents({ sort: 'date_asc' });
-      if (data.success) this.events = data.events;
+      const data = await Eventify.fetchEvents({
+        sort: 'date_asc',
+        limit: 500,
+        userId: Eventify.currentUser?.id,
+        userEmail: Eventify.currentUser?.email,
+      });
+      if (data.success) this.events = data.events || [];
+      else this.events = [];
     } catch (e) {
       this.events = [];
     }
   },
 
   getEventsForDate(dateStr) {
-    return this.events.filter(e => e.date === dateStr);
+    const key = String(dateStr).slice(0, 10);
+    return this.events.filter((e) => this.eventDateKey(e) === key);
   },
 
   formatDateStr(year, month, day) {
@@ -57,16 +86,18 @@ const Calendar = {
     const todayStr = this.formatDateStr(today.getFullYear(), today.getMonth(), today.getDate());
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    let html = dayNames.map(d => `<div class="calendar-day-name">${d}</div>`).join('');
+    let html = dayNames.map((d) => `<div class="calendar-day-name">${d}</div>`).join('');
 
     for (let i = firstDay - 1; i >= 0; i--) {
       const day = daysInPrev - i;
-      html += `<div class="calendar-day other-month">${day}</div>`;
+      html += `<div class="calendar-day other-month"><span class="cal-day-num">${day}</span></div>`;
     }
 
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = this.formatDateStr(year, month, day);
-      const hasEvents = this.getEventsForDate(dateStr).length > 0;
+      const dayEvents = this.getEventsForDate(dateStr);
+      const count = dayEvents.length;
+      const hasEvents = count > 0;
       const isToday = dateStr === todayStr;
       const isSelected = this.selectedDate === dateStr;
 
@@ -75,22 +106,44 @@ const Calendar = {
       if (isSelected) classes += ' selected';
       if (hasEvents) classes += ' has-events';
 
-      html += `<div class="${classes}" data-date="${dateStr}">${day}</div>`;
+      const titlePreview = hasEvents
+        ? Eventify.escapeHtml(dayEvents[0].title || 'Event')
+        : '';
+      const more = count > 1 ? `<span class="cal-more">+${count - 1}</span>` : '';
+      const badge = hasEvents ? `<span class="cal-event-badge" title="${count} event${count > 1 ? 's' : ''}">${count}</span>` : '';
+      const chip = hasEvents
+        ? `<span class="cal-event-chip">${titlePreview}${more}</span>`
+        : '';
+
+      html += `
+        <div class="${classes}" data-date="${dateStr}" role="button" tabindex="0"
+             aria-label="${dateStr}${hasEvents ? `, ${count} event${count > 1 ? 's' : ''}` : ''}">
+          <span class="cal-day-num">${day}</span>
+          ${badge}
+          ${chip}
+        </div>`;
     }
 
     const totalCells = firstDay + daysInMonth;
     const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
     for (let i = 1; i <= remaining; i++) {
-      html += `<div class="calendar-day other-month">${i}</div>`;
+      html += `<div class="calendar-day other-month"><span class="cal-day-num">${i}</span></div>`;
     }
 
     this.grid.innerHTML = html;
 
-    this.grid.querySelectorAll('.calendar-day[data-date]').forEach(el => {
-      el.addEventListener('click', () => {
+    this.grid.querySelectorAll('.calendar-day[data-date]').forEach((el) => {
+      const open = () => {
         this.selectedDate = el.dataset.date;
         this.render();
         this.showDayEvents(el.dataset.date);
+      };
+      el.addEventListener('click', open);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          open();
+        }
       });
     });
   },
@@ -110,8 +163,8 @@ const Calendar = {
     }
 
     this.eventsContainer.innerHTML = `
-      <h3>Events on ${label}</h3>
-      <div class="events-grid">${events.map(e => Eventify.renderEventCard(e)).join('')}</div>
+      <h3>${events.length} event${events.length > 1 ? 's' : ''} on ${label}</h3>
+      <div class="events-grid">${events.map((e) => Eventify.renderEventCard(e)).join('')}</div>
     `;
     Eventify.bindRsvpButtons(this.eventsContainer);
     Eventify.bindFavoriteButtons(this.eventsContainer);
