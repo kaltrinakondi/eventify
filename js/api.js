@@ -43,22 +43,65 @@ const EventifyDB = {
     return data;
   },
 
+  isEmailVerified(user) {
+    if (!user) return false;
+    return !!(user.email_confirmed_at || user.confirmed_at);
+  },
+
   async getSessionUser() {
     const { data: { session } } = await sb.auth.getSession();
     if (!session?.user) return null;
-    const profile = await this.ensureProfile(session.user);
-    if (!profile) {
-      // Broken session (token present, no profile / no insert policy) — clear to avoid login loops
+
+    // Block unverified accounts from staying logged in
+    if (!this.isEmailVerified(session.user)) {
       await sb.auth.signOut();
       return null;
     }
-    return { ...profile, email: session.user.email };
+
+    const profile = await this.ensureProfile(session.user);
+    if (!profile) {
+      await sb.auth.signOut();
+      return null;
+    }
+    return {
+      ...profile,
+      email: session.user.email,
+      email_confirmed_at: session.user.email_confirmed_at || session.user.confirmed_at || null,
+    };
   },
 
   async login(email, password) {
-    const { error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) return { success: false, message: error.message };
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('confirm') || msg.includes('verified') || msg.includes('verification')) {
+        return {
+          success: false,
+          needsEmailConfirm: true,
+          message: 'Please verify your email before signing in. Check your inbox for the link.',
+        };
+      }
+      return { success: false, message: error.message };
+    }
+
+    const authUser = data?.user;
+    if (!this.isEmailVerified(authUser)) {
+      await sb.auth.signOut();
+      return {
+        success: false,
+        needsEmailConfirm: true,
+        message: 'Please verify your email before signing in. Check your inbox for the link.',
+      };
+    }
+
     const user = await this.getSessionUser();
+    if (!user) {
+      return {
+        success: false,
+        needsEmailConfirm: true,
+        message: 'Please verify your email before signing in.',
+      };
+    }
     return { success: true, message: 'Welcome back!', user };
   },
 
@@ -74,23 +117,27 @@ const EventifyDB = {
     });
     if (error) return { success: false, message: error.message };
 
-    // Email confirmation enabled → no session until user clicks the email link
-    if (!data.session) {
+    const confirmed = this.isEmailVerified(data.user);
+
+    // Never keep a session after signup — user must verify email first
+    if (data.session) {
+      await sb.auth.signOut();
+    }
+
+    // If Supabase "Confirm email" is OFF, signup auto-confirms and no email is sent
+    if (confirmed) {
       return {
-        success: true,
+        success: false,
         needsEmailConfirm: true,
-        message: 'Account created! Check your email and click the verification link, then sign in.',
-        user: null,
+        message: 'Email verification must be enabled. In Supabase go to Authentication → Providers → Email → turn ON “Confirm email”, then register again.',
       };
     }
 
-    // Confirmation disabled in Supabase → signed in immediately
-    const user = await this.getSessionUser();
     return {
       success: true,
-      needsEmailConfirm: false,
-      message: 'Account created successfully!',
-      user,
+      needsEmailConfirm: true,
+      message: 'Account created. Verify your email before you can sign in — check your inbox for the link.',
+      user: null,
     };
   },
 

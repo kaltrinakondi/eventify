@@ -63,8 +63,8 @@ const Auth = {
         alert.textContent = data.message;
         alert.classList.remove('hidden');
 
-        if (data.success && data.needsEmailConfirm) {
-          // Stay on page — show verify instructions + resend
+        if (data.success && (data.needsEmailConfirm || !data.user)) {
+          // Always require email verification — never auto-login after signup
           const box = document.getElementById('verify-email-box');
           if (box) {
             box.classList.remove('hidden');
@@ -82,11 +82,19 @@ const Auth = {
             if (resendBtn) resendBtn.disabled = false;
           }, { once: true });
         } else if (data.success && data.user) {
-          const params = new URLSearchParams(window.location.search);
-          const target = typeof safeAuthRedirect === 'function'
-            ? safeAuthRedirect(params.get('redirect') || 'index.html')
-            : (params.get('redirect') || 'index.html');
-          setTimeout(() => { window.location.href = target; }, 1200);
+          // Should not happen when verification is enforced
+          await EventifyDB.logout();
+          alert.className = 'alert alert-error';
+          alert.textContent = 'Please verify your email before using your account.';
+          alert.classList.remove('hidden');
+        } else if (!data.success && data.needsEmailConfirm) {
+          const box = document.getElementById('verify-email-box');
+          if (box) {
+            box.classList.remove('hidden');
+            const emailEl = document.getElementById('verify-email-address');
+            if (emailEl) emailEl.textContent = email;
+            form.classList.add('hidden');
+          }
         }
       } catch (err) {
         alert.className = 'alert alert-error';
