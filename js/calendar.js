@@ -27,15 +27,31 @@ const Calendar = {
     });
 
     await this.loadEvents();
+
+    // Jump to the month of the next upcoming event so marks are visible
+    const todayKey = this.formatDateStr(
+      new Date().getFullYear(),
+      new Date().getMonth(),
+      new Date().getDate()
+    );
+    const upcoming = [...this.events]
+      .map((e) => this.eventDateKey(e))
+      .filter((d) => d >= todayKey)
+      .sort();
+    const focusDate = upcoming[0] || this.events.map((e) => this.eventDateKey(e)).sort()[0];
+    if (focusDate) {
+      const [y, m] = focusDate.split('-').map(Number);
+      this.currentDate = new Date(y, m - 1, 1);
+    }
+
     this.render();
 
-    // Auto-open today if it has events, else first event day in this month
-    const today = new Date();
-    const todayStr = this.formatDateStr(today.getFullYear(), today.getMonth(), today.getDate());
-    if (this.getEventsForDate(todayStr).length) {
-      this.selectedDate = todayStr;
+    // Auto-open nearest event day (or today if it has events)
+    const openDate = (this.getEventsForDate(todayKey).length ? todayKey : null) || focusDate;
+    if (openDate && this.getEventsForDate(openDate).length) {
+      this.selectedDate = openDate;
       this.render();
-      this.showDayEvents(todayStr);
+      this.showDayEvents(openDate);
     }
   },
 

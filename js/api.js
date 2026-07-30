@@ -347,7 +347,25 @@ const EventifyDB = {
     if (sort.column === 'date') query = query.order('time', { ascending: sort.ascending });
     query = query.limit(Math.min(parseInt(params.limit) || 50, 100));
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+
+    // Fallback if events_with_stats view is missing/stale
+    if (error && /events_with_stats|column|schema cache|relation/i.test(error.message || '')) {
+      let fallback = sb.from('events').select('*').eq('visibility', 'public');
+      if (params.category && params.category !== 'all') fallback = fallback.eq('category', params.category);
+      if (params.upcoming || params.featured) {
+        fallback = fallback.gte('date', new Date().toISOString().split('T')[0]);
+      }
+      if (params.date_from) fallback = fallback.gte('date', params.date_from);
+      if (params.date_to) fallback = fallback.lte('date', params.date_to);
+      if (params.search) {
+        const safe = String(params.search).replace(/[%_,.()\"]/g, ' ').trim().slice(0, 80);
+        if (safe) fallback = fallback.or(`title.ilike.%${safe}%,description.ilike.%${safe}%,location.ilike.%${safe}%,category.ilike.%${safe}%`);
+      }
+      fallback = fallback.order('date', { ascending: true }).limit(Math.min(parseInt(params.limit) || 50, 100));
+      ({ data, error } = await fallback);
+    }
+
     if (error) return { success: false, message: error.message, events: [] };
 
     let favoriteIds = new Set();
@@ -872,12 +890,20 @@ const EventifyDB = {
 
   async getPublicStats() {
     const today = new Date().toISOString().split('T')[0];
-    const [events, users, upcoming] = await Promise.all([
-      sb.from('events').select('*', { count: 'exact', head: true }),
-      sb.from('profiles').select('*', { count: 'exact', head: true }),
-      sb.from('events').select('*', { count: 'exact', head: true }).gte('date', today),
-    ]);
-    return { events: events.count || 0, users: users.count || 0, upcoming: upcoming.count || 0 };
+    try {
+      const [events, users, upcoming] = await Promise.all([
+        sb.from('events').select('*', { count: 'exact', head: true }).eq('visibility', 'public'),
+        sb.from('profiles').select('*', { count: 'exact', head: true }),
+        sb.from('events').select('*', { count: 'exact', head: true }).eq('visibility', 'public').gte('date', today),
+      ]);
+      return {
+        events: events.count || 0,
+        users: users.count || 0,
+        upcoming: upcoming.count || 0,
+      };
+    } catch (_) {
+      return { events: 0, users: 0, upcoming: 0 };
+    }
   },
 
   async getRecommendedEvents(userId, excludeIds = []) {

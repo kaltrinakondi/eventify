@@ -203,10 +203,10 @@
   <script src="js/vendor/supabase.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/categories.js?v=8"></script>
-  <script src="js/api.js?v=12"></script>
+  <script src="js/api.js?v=20"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
-  <script src="js/app.js?v=17"></script>
+  <script src="js/app.js?v=21"></script>
   <script>
     const TESTIMONIALS = [
       { name: 'Sarah Johnson', role: 'Event Organizer', text: 'Eventify made planning my conference effortless. RSVP tracking and ticketing all in one place saved me hours every week.', stars: 5 },
@@ -232,17 +232,22 @@
 
     async function loadEventSection(gridId, params) {
       const grid = document.getElementById(gridId);
-      if (!grid) return;
+      if (!grid) return [];
       Eventify.showLoading(grid, 'Loading events...');
-      const data = await Eventify.fetchEvents(params);
-      if (data.success && data.events.length) {
-        grid.innerHTML = data.events.map(e => Eventify.renderEventCard(e)).join('');
-        Eventify.bindRsvpButtons(grid);
-        Eventify.bindFavoriteButtons(grid);
-      } else {
+      try {
+        const data = await Eventify.fetchEvents(params);
+        if (data.success && data.events?.length) {
+          grid.innerHTML = data.events.map(e => Eventify.renderEventCard(e)).join('');
+          Eventify.bindRsvpButtons(grid);
+          Eventify.bindFavoriteButtons(grid);
+          return data.events;
+        }
         grid.innerHTML = '<p class="empty-state">No events to show yet.</p>';
+        return [];
+      } catch (err) {
+        grid.innerHTML = '<p class="empty-state">Could not load events. Refresh and try again.</p>';
+        return [];
       }
-      return data.events || [];
     }
 
     document.addEventListener('DOMContentLoaded', async () => {

@@ -182,10 +182,13 @@ const Search = {
       if (this.loadingEl) this.loadingEl.classList.add('hidden');
 
       if (!data.success || !data.events?.length) {
+        this.container.innerHTML = '';
         if (this.emptyEl) this.emptyEl.classList.remove('hidden');
         if (this.resultsCount) this.resultsCount.textContent = '0 public events found';
         return;
       }
+
+      if (this.emptyEl) this.emptyEl.classList.add('hidden');
 
       if (preferDirect) {
         const term = this.searchInput?.value.trim() || '';
