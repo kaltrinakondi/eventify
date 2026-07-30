@@ -442,6 +442,52 @@ const EventifyDB = {
     return sb.storage.from('event-images').getPublicUrl(path).data.publicUrl;
   },
 
+  async addEventGalleryImages(eventId, organizerId, files = []) {
+    const eid = Number(eventId);
+    if (!Number.isFinite(eid) || eid <= 0) {
+      return { success: false, message: 'Invalid event.' };
+    }
+    if (!files.length) return { success: false, message: 'No images selected.' };
+
+    const { data: row, error: readErr } = await sb
+      .from('events')
+      .select('gallery, organizer_id')
+      .eq('id', eid)
+      .maybeSingle();
+    if (readErr || !row) return { success: false, message: readErr?.message || 'Event not found.' };
+
+    const urls = [...(Array.isArray(row.gallery) ? row.gallery : [])];
+    try {
+      for (const file of files) {
+        urls.push(await this.uploadEventImage(organizerId || row.organizer_id, file));
+      }
+    } catch (err) {
+      return { success: false, message: err.message };
+    }
+
+    const { error } = await sb.from('events').update({ gallery: urls }).eq('id', eid);
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: 'Photos added.', gallery: urls };
+  },
+
+  async removeEventGalleryImage(eventId, imageUrl) {
+    const eid = Number(eventId);
+    if (!Number.isFinite(eid) || eid <= 0 || !imageUrl) {
+      return { success: false, message: 'Invalid request.' };
+    }
+    const { data: row, error: readErr } = await sb
+      .from('events')
+      .select('gallery')
+      .eq('id', eid)
+      .maybeSingle();
+    if (readErr || !row) return { success: false, message: readErr?.message || 'Event not found.' };
+
+    const gallery = (Array.isArray(row.gallery) ? row.gallery : []).filter((u) => u !== imageUrl);
+    const { error } = await sb.from('events').update({ gallery }).eq('id', eid);
+    if (error) return { success: false, message: error.message };
+    return { success: true, message: 'Photo removed.', gallery };
+  },
+
   async uploadEventDocument(organizerId, file) {
     const path = `${organizerId}/${Date.now()}-${file.name.replace(/[^\w.\-]+/g, '_')}`;
     const { error } = await sb.storage.from('event-documents').upload(path, file);

@@ -1,0 +1,276 @@
+/** Event detail sections + photo gallery (keeps event.html lean). */
+const EventDetailSections = {
+  esc(text) {
+    return typeof Eventify !== 'undefined' ? Eventify.escapeHtml(text ?? '') : String(text ?? '');
+  },
+
+  section(title, bodyHtml, opts = {}) {
+    if (!bodyHtml && !opts.force) return '';
+    return `
+      <section class="detail-section-card ${opts.className || ''}" id="${opts.id || ''}">
+        <div class="detail-section-head">
+          <h3>${this.esc(title)}</h3>
+          ${opts.actions || ''}
+        </div>
+        <div class="detail-section-body">${bodyHtml}</div>
+      </section>`;
+  },
+
+  render(event, { isHost = false } = {}) {
+    const pd = event.planning_data || {};
+    const slug = typeof getCategorySlug === 'function' ? getCategorySlug(event.category) : 'custom';
+    const gallery = Array.isArray(event.gallery) ? event.gallery.filter(Boolean) : [];
+    const guestPhotos = (pd.guestGallery?.photos || []).map((p) => p.url).filter(Boolean);
+    const allPhotos = [...gallery, ...guestPhotos];
+
+    const schedule = pd.schedule || [];
+    const guests = pd.guests || [];
+    const gifts = pd.gifts || [];
+    const vendors = pd.vendors || [];
+    const checklist = pd.checklist || pd.board || [];
+    const budget = pd.budget || {};
+    const docs = pd.documents || [];
+    const notes = [pd.planningNotes, pd.categoryNotes, pd.importantReminders].filter(Boolean).join('\n\n');
+
+    // Charity-friendly: gifts as donations / auction; vendors as sponsors; budget total as goal
+    const isCharity = slug === 'charity';
+    const showGifts = gifts.length || isHost;
+    const showSponsors = vendors.length || (isHost && ['charity', 'conferences', 'festivals', 'music', 'art'].includes(slug));
+
+    let html = '<div class="detail-sections" id="detail-sections">';
+
+    html += this.section('Overview', `
+      <p>${this.esc(event.description || 'No description yet.')}</p>
+      <div class="detail-overview-meta">
+        <span>📁 ${this.esc(event.category || 'Event')}</span>
+        <span>📍 ${this.esc(event.venue_name || event.location || '—')}</span>
+        ${event.capacity ? `<span>👥 Capacity ${Number(event.capacity)}</span>` : ''}
+      </div>
+    `, { force: true, id: 'section-overview' });
+
+    html += this.section('Schedule',
+      schedule.length
+        ? `<ul class="detail-list">${schedule.map((s) => `
+            <li><strong>${this.esc(s.time || '')}</strong> — ${this.esc(s.activity || s.title || 'Item')}
+            ${s.person ? `<span class="muted"> (${this.esc(s.person)})</span>` : ''}
+            ${s.notes ? `<div class="muted">${this.esc(s.notes)}</div>` : ''}
+            </li>`).join('')}</ul>`
+        : (isHost ? '<p class="muted">No schedule yet. Add one in the planner.</p>' : ''),
+      { force: isHost || schedule.length > 0, id: 'section-schedule' }
+    );
+
+    html += this.section('Guest List',
+      guests.length
+        ? `<p>${guests.length} guest${guests.length === 1 ? '' : 's'} on the list${isHost ? '' : ' (names private)'}.</p>
+           ${isHost ? `<ul class="detail-list">${guests.slice(0, 40).map((g) => `
+             <li>${this.esc(g.name || 'Guest')}${g.vip ? ' ★' : ''}${g.status ? ` — ${this.esc(g.status)}` : ''}</li>
+           `).join('')}${guests.length > 40 ? `<li class="muted">+${guests.length - 40} more</li>` : ''}</ul>` : ''}`
+        : (isHost ? '<p class="muted">No guests yet. Add them in the planner.</p>' : ''),
+      { force: isHost || guests.length > 0, id: 'section-guests' }
+    );
+
+    html += this.section('RSVP', `
+      <div id="detail-rsvp-summary" class="muted">Loading RSVPs…</div>
+      ${isHost ? '<button type="button" class="btn btn-sm btn-outline" id="detail-open-rsvps" style="margin-top:8px;">Who\'s coming</button>' : ''}
+    `, { force: true, id: 'section-rsvp' });
+
+    if (showGifts || isCharity) {
+      html += this.section(isCharity ? 'Donations / Gift & Auction' : 'Gift Registry',
+        gifts.length
+          ? `<ul class="detail-list">${gifts.map((g) => `
+              <li>${this.esc(g.name || 'Item')}
+                ${g.price ? ` — $${this.esc(g.price)}` : ''}
+                ${g.url ? ` <a href="${this.esc(g.url)}" target="_blank" rel="noopener">Link</a>` : ''}
+                ${g.claimed ? ' <span class="muted">(claimed)</span>' : ''}
+              </li>`).join('')}</ul>`
+          : (isHost ? '<p class="muted">No items yet. Add gifts/donations in the planner.</p>' : ''),
+        { force: isHost || gifts.length > 0, id: 'section-gifts' }
+      );
+    }
+
+    if (isCharity || budget.total) {
+      html += this.section(isCharity ? 'Fundraising goal' : 'Budget',
+        `<p><strong>Goal / total:</strong> $${Number(budget.total || 0).toLocaleString()}</p>
+         ${(budget.lines || []).length ? `<ul class="detail-list">${budget.lines.slice(0, 12).map((l) => `
+           <li>${this.esc(l.category || l.name || 'Line')}: $${Number(l.planned || 0).toLocaleString()}</li>
+         `).join('')}</ul>` : (isHost ? '<p class="muted">Add budget lines in the planner.</p>' : '')}`,
+        { force: isHost || !!budget.total || (budget.lines || []).length > 0, id: 'section-budget' }
+      );
+    }
+
+    if (showSponsors) {
+      html += this.section(isCharity || slug === 'conferences' ? 'Sponsors' : 'Vendors',
+        vendors.length
+          ? `<ul class="detail-list">${vendors.map((v) => `
+              <li><strong>${this.esc(v.name || 'Vendor')}</strong>
+              ${v.role || v.type ? ` — ${this.esc(v.role || v.type)}` : ''}
+              ${v.contact ? `<div class="muted">${this.esc(v.contact)}</div>` : ''}
+              </li>`).join('')}</ul>`
+          : (isHost ? '<p class="muted">No sponsors/vendors yet.</p>' : ''),
+        { force: isHost || vendors.length > 0, id: 'section-sponsors' }
+      );
+    }
+
+    const tasks = Array.isArray(checklist)
+      ? checklist
+      : (Array.isArray(pd.board) ? pd.board : []);
+    html += this.section('Tasks',
+      tasks.length
+        ? `<ul class="detail-list">${tasks.slice(0, 20).map((t) => `
+            <li>${t.done || t.status === 'completed' ? '✓ ' : '○ '}${this.esc(t.title || t.text || t.name || 'Task')}</li>
+          `).join('')}</ul>`
+        : (isHost ? '<p class="muted">No tasks yet. Use the To-Do Board in the planner.</p>' : ''),
+      { force: isHost || tasks.length > 0, id: 'section-tasks' }
+    );
+
+    html += this.section('Notes',
+      notes ? `<pre class="detail-notes">${this.esc(notes)}</pre>` : (isHost ? '<p class="muted">No notes yet.</p>' : ''),
+      { force: isHost || !!notes, id: 'section-notes' }
+    );
+
+    const galleryActions = isHost
+      ? `<div class="detail-gallery-actions">
+           <button type="button" class="btn btn-sm btn-primary" id="btn-add-gallery-pics">Add Pictures</button>
+           <input type="file" id="detail-gallery-files" accept="image/*" multiple hidden>
+         </div>`
+      : '';
+
+    html += this.section('Photo Gallery', `
+      ${galleryActions}
+      <div class="detail-gallery-grid" id="detail-gallery-grid">
+        ${allPhotos.length
+          ? allPhotos.map((url, i) => `
+              <button type="button" class="detail-gallery-item" data-gallery-index="${i}" data-gallery-url="${this.esc(url)}">
+                <img src="${this.esc(url)}" alt="Event photo ${i + 1}" loading="lazy">
+                ${isHost && gallery.includes(url) ? `<span class="detail-gallery-delete" data-delete-url="${this.esc(url)}" title="Delete">×</span>` : ''}
+              </button>`).join('')
+          : '<p class="muted">No photos yet.</p>'}
+      </div>
+    `, { force: true, id: 'section-gallery', actions: '' });
+
+    html += this.section('Files / Attachments',
+      docs.length
+        ? `<ul class="detail-list">${docs.map((d) => `
+            <li>${d.url ? `<a href="${this.esc(d.url)}" target="_blank" rel="noopener">${this.esc(d.name || 'File')}</a>` : this.esc(d.name || 'File')}</li>
+          `).join('')}</ul>`
+        : (isHost ? '<p class="muted">No files yet. Upload in the Documents tab.</p>' : ''),
+      { force: isHost || docs.length > 0, id: 'section-files' }
+    );
+
+    html += `
+      <div id="gallery-lightbox" class="gallery-lightbox hidden" role="dialog" aria-modal="true">
+        <button type="button" class="gallery-lightbox-close" id="gallery-lightbox-close" aria-label="Close">×</button>
+        <img id="gallery-lightbox-img" alt="Preview">
+      </div>
+    </div>`;
+
+    return html;
+  },
+
+  async bind(event, { isHost = false } = {}) {
+    const wrap = document.getElementById('detail-sections');
+    if (!wrap) return;
+
+    // RSVP summary
+    try {
+      const votes = await EventifyDB.getOrganizerInviteRsvps?.(event.id);
+      const list = votes?.success ? (votes.votes || []) : [];
+      const going = votes?.counts?.going ?? list.filter((v) => v.status === 'going').length;
+      const maybe = votes?.counts?.maybe ?? list.filter((v) => v.status === 'maybe').length;
+      const el = document.getElementById('detail-rsvp-summary');
+      if (el) {
+        el.textContent = isHost
+          ? `${going} going · ${maybe} maybe · ${list.length} total replies`
+          : 'RSVP from the sidebar if you have an account.';
+      }
+      document.getElementById('detail-open-rsvps')?.addEventListener('click', () => {
+        Eventify.showWhosComingModal?.({
+          title: event.title,
+          votes: list,
+          initialFilter: 'going',
+        });
+      });
+    } catch (_) {
+      const el = document.getElementById('detail-rsvp-summary');
+      if (el) el.textContent = 'RSVP info unavailable.';
+    }
+
+    // Gallery upload
+    if (isHost) {
+      document.getElementById('btn-add-gallery-pics')?.addEventListener('click', () => {
+        document.getElementById('detail-gallery-files')?.click();
+      });
+      document.getElementById('detail-gallery-files')?.addEventListener('change', async (e) => {
+        const files = [...(e.target.files || [])];
+        if (!files.length) return;
+        const btn = document.getElementById('btn-add-gallery-pics');
+        if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+        const result = await EventifyDB.addEventGalleryImages(event.id, Eventify.currentUser?.id, files);
+        if (btn) { btn.disabled = false; btn.textContent = 'Add Pictures'; }
+        e.target.value = '';
+        Eventify.showToast(result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          event.gallery = result.gallery;
+          this.refreshGalleryGrid(event, isHost);
+        }
+      });
+    }
+
+    wrap.addEventListener('click', async (e) => {
+      const del = e.target.closest('[data-delete-url]');
+      if (del && isHost) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (!confirm('Delete this photo?')) return;
+        const url = del.dataset.deleteUrl;
+        const result = await EventifyDB.removeEventGalleryImage(event.id, url);
+        Eventify.showToast(result.message, result.success ? 'success' : 'error');
+        if (result.success) {
+          event.gallery = result.gallery;
+          this.refreshGalleryGrid(event, isHost);
+        }
+        return;
+      }
+      const item = e.target.closest('[data-gallery-url]');
+      if (item) {
+        this.openLightbox(item.dataset.galleryUrl);
+      }
+    });
+
+    document.getElementById('gallery-lightbox-close')?.addEventListener('click', () => this.closeLightbox());
+    document.getElementById('gallery-lightbox')?.addEventListener('click', (e) => {
+      if (e.target.id === 'gallery-lightbox') this.closeLightbox();
+    });
+  },
+
+  refreshGalleryGrid(event, isHost) {
+    const grid = document.getElementById('detail-gallery-grid');
+    if (!grid) return;
+    const pd = event.planning_data || {};
+    const gallery = Array.isArray(event.gallery) ? event.gallery.filter(Boolean) : [];
+    const guestPhotos = (pd.guestGallery?.photos || []).map((p) => p.url).filter(Boolean);
+    const allPhotos = [...gallery, ...guestPhotos];
+    grid.innerHTML = allPhotos.length
+      ? allPhotos.map((url, i) => `
+          <button type="button" class="detail-gallery-item" data-gallery-index="${i}" data-gallery-url="${this.esc(url)}">
+            <img src="${this.esc(url)}" alt="Event photo ${i + 1}" loading="lazy">
+            ${isHost && gallery.includes(url) ? `<span class="detail-gallery-delete" data-delete-url="${this.esc(url)}" title="Delete">×</span>` : ''}
+          </button>`).join('')
+      : '<p class="muted">No photos yet.</p>';
+  },
+
+  openLightbox(url) {
+    const box = document.getElementById('gallery-lightbox');
+    const img = document.getElementById('gallery-lightbox-img');
+    if (!box || !img || !url) return;
+    img.src = url;
+    box.classList.remove('hidden');
+  },
+
+  closeLightbox() {
+    const box = document.getElementById('gallery-lightbox');
+    const img = document.getElementById('gallery-lightbox-img');
+    if (img) img.removeAttribute('src');
+    box?.classList.add('hidden');
+  },
+};

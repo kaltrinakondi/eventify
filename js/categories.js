@@ -140,6 +140,40 @@ const CATEGORIES = [
 
 const CUSTOM_CATEGORY = 'Custom';
 
+/** Core planner tabs always available */
+const PLANNER_CORE_TABS = ['basics', 'planning', 'ai', 'settings', 'invites'];
+
+/**
+ * Relevant planner tabs per category (slug). Keep lists short — only the most useful tools.
+ * Core tabs are always shown in addition to these.
+ */
+const CATEGORY_PLANNER_TABS = {
+  weddings: ['guests', 'seating', 'gifts', 'menu', 'vendors', 'schedule', 'playlist', 'photos', 'budget', 'documents'],
+  birthday: ['guests', 'gifts', 'playlist', 'photos', 'schedule', 'menu', 'budget', 'board'],
+  conferences: ['schedule', 'guests', 'vendors', 'documents', 'certs', 'budget', 'team', 'board'],
+  business: ['schedule', 'guests', 'documents', 'reminders', 'board', 'budget'],
+  music: ['schedule', 'vendors', 'guests', 'playlist', 'photos', 'team', 'budget'],
+  sports: ['schedule', 'team', 'guests', 'budget', 'documents', 'board'],
+  festivals: ['vendors', 'schedule', 'team', 'guests', 'budget', 'photos', 'documents'],
+  workshops: ['guests', 'schedule', 'documents', 'certs', 'budget', 'team'],
+  graduation: ['guests', 'seating', 'certs', 'photos', 'schedule', 'gifts'],
+  baby: ['guests', 'gifts', 'photos', 'menu', 'schedule', 'playlist'],
+  charity: ['guests', 'gifts', 'vendors', 'team', 'budget', 'photos', 'schedule', 'documents'],
+  networking: ['guests', 'schedule', 'team', 'documents', 'reminders', 'board'],
+  private: ['guests', 'playlist', 'photos', 'schedule', 'seating', 'budget'],
+  food: ['menu', 'vendors', 'guests', 'photos', 'schedule', 'budget'],
+  art: ['schedule', 'vendors', 'guests', 'photos', 'budget', 'documents'],
+  custom: ['guests', 'budget', 'schedule', 'photos', 'documents', 'board', 'vendors'],
+};
+
+function getPlannerTabsForCategory(categoryName) {
+  const slug = typeof getCategorySlug === 'function'
+    ? getCategorySlug(categoryName)
+    : 'custom';
+  const extra = CATEGORY_PLANNER_TABS[slug] || CATEGORY_PLANNER_TABS.custom;
+  return [...new Set([...PLANNER_CORE_TABS, ...extra])];
+}
+
 function normalizeCategoryName(name) {
   if (!name) return '';
   const found = CATEGORIES.find(c =>

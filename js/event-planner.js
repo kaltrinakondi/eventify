@@ -97,6 +97,7 @@ const EventPlanner = {
     }
 
     this.updatePlannerHeader();
+    this.applyCategoryTabFilter();
     this.updateCountdown();
     setInterval(() => this.updateCountdown(), 60000);
   },
@@ -116,6 +117,7 @@ const EventPlanner = {
   bindTabs() {
     document.querySelectorAll('.planner-tab').forEach(tab => {
       tab.addEventListener('click', () => {
+        if (tab.classList.contains('tab-hidden')) return;
         document.querySelectorAll('.planner-tab').forEach(t => t.classList.remove('active'));
         document.querySelectorAll('.planner-panel').forEach(p => p.classList.remove('active'));
         tab.classList.add('active');
@@ -126,6 +128,44 @@ const EventPlanner = {
         if (tab.dataset.tab === 'invites') this.refreshShareLinkUI();
       });
     });
+  },
+
+  /** Show only planning tabs relevant to the selected event type */
+  applyCategoryTabFilter() {
+    const category = this.getSelectedCategory() || 'Custom';
+    const allowed = typeof getPlannerTabsForCategory === 'function'
+      ? getPlannerTabsForCategory(category)
+      : PLANNER_CORE_TABS;
+    const allowedSet = new Set(allowed);
+
+    let activeHidden = false;
+    document.querySelectorAll('.planner-tab').forEach((tab) => {
+      const id = tab.dataset.tab;
+      const show = allowedSet.has(id);
+      tab.classList.toggle('tab-hidden', !show);
+      tab.style.display = show ? '' : 'none';
+      if (!show && tab.classList.contains('active')) activeHidden = true;
+    });
+
+    // Hint under tabs
+    let hint = document.getElementById('category-tabs-hint');
+    if (!hint) {
+      const nav = document.querySelector('.planner-tabs');
+      if (nav) {
+        hint = document.createElement('p');
+        hint.id = 'category-tabs-hint';
+        hint.className = 'card-desc category-tabs-hint';
+        nav.insertAdjacentElement('afterend', hint);
+      }
+    }
+    if (hint) {
+      const label = category || 'your event';
+      hint.textContent = `Planning tools for ${label} — only the most useful sections are shown.`;
+    }
+
+    if (activeHidden) {
+      document.querySelector('.planner-tab[data-tab="basics"]:not(.tab-hidden)')?.click();
+    }
   },
 
   bindBasics() {
@@ -165,6 +205,28 @@ const EventPlanner = {
       if (!btn) return;
       e.preventDefault();
       e.stopPropagation();
+      this.removeGalleryItem(btn.dataset.removeGallery, btn.dataset.removeType || 'url');
+    });
+
+    // Photo Gallery tab — same gallery uploads
+    const photosBox = document.getElementById('planner-photos-upload');
+    photosBox?.addEventListener('click', () => document.getElementById('planner-photos-files')?.click());
+    document.getElementById('planner-photos-files')?.addEventListener('change', (e) => {
+      const files = [...(e.target.files || [])];
+      files.forEach((file) => {
+        this.state.galleryPending.push({
+          id: `pending-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          file,
+          url: URL.createObjectURL(file),
+        });
+      });
+      e.target.value = '';
+      this.renderGalleryPreviews();
+    });
+    document.getElementById('planner-gallery-preview')?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-remove-gallery]');
+      if (!btn) return;
+      e.preventDefault();
       this.removeGalleryItem(btn.dataset.removeGallery, btn.dataset.removeType || 'url');
     });
 
@@ -209,6 +271,7 @@ const EventPlanner = {
       this.refreshCategoryToolkit({ scroll: true });
       this.refreshAI();
       this.updatePlannerHeader();
+      this.applyCategoryTabFilter();
     });
     document.getElementById('btn-apply-category-pack')?.addEventListener('click', () => this.applyAI());
     document.getElementById('btn-open-ai-tab')?.addEventListener('click', () => {
@@ -219,6 +282,7 @@ const EventPlanner = {
     this.syncCustomCategoryUI();
     this.refreshCategoryToolkit({ scroll: false });
     this.updatePlannerHeader();
+    this.applyCategoryTabFilter();
   },
 
   applyUrlCategoryPreset() {
@@ -234,6 +298,7 @@ const EventPlanner = {
     this.syncCustomCategoryUI();
     this.refreshCategoryToolkit({ scroll: isCustom || !!presetCat });
     this.updatePlannerHeader();
+    this.applyCategoryTabFilter();
   },
 
   isDefaultCover(url) {
@@ -271,8 +336,8 @@ const EventPlanner = {
 
   renderGalleryPreviews() {
     const container = document.getElementById('gallery-previews');
+    const plannerPreview = document.getElementById('planner-gallery-preview');
     const galleryBox = document.getElementById('gallery-upload');
-    if (!container) return;
 
     const saved = (this.state.galleryUrls || []).map((url, index) => `
       <div class="gallery-thumb" data-gallery-key="url-${index}">
@@ -288,7 +353,10 @@ const EventPlanner = {
       </div>
     `).join('');
 
-    container.innerHTML = saved + pending || '';
+    const html = saved + pending || '';
+    if (container) container.innerHTML = html;
+    if (plannerPreview) plannerPreview.innerHTML = html;
+
     const total = (this.state.galleryUrls?.length || 0) + (this.state.galleryPending?.length || 0);
     if (galleryBox?.querySelector('p')) {
       galleryBox.querySelector('p').textContent = total
@@ -2229,6 +2297,7 @@ const EventPlanner = {
     this.refreshCategoryNoteChips();
     this.updateCountdown();
     this.updatePlannerHeader();
+    this.applyCategoryTabFilter();
     this.refreshShareLinkUI();
     this.loadInviteRsvps();
   },
