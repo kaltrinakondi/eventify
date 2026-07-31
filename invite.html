@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>You're Invited - Eventify</title>
-  <link rel="stylesheet" href="css/style.css?v=55">
+  <link rel="stylesheet" href="css/style.css?v=57">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="images/app-icon.png">
@@ -49,8 +49,8 @@
 
   <script src="js/vendor/supabase.js"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/categories.js"></script>
-  <script src="js/api.js?v=21"></script>
+  <script src="js/categories.js?v=10"></script>
+  <script src="js/api.js?v=23"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
   <script src="js/app.js?v=21"></script>
@@ -74,6 +74,66 @@
         if (status === 'maybe') return 'Maybe';
         if (status === 'not_going') return "I'm not coming";
         return '';
+      }
+
+      function guestStatusLabel(status) {
+        if (status === 'going') return 'Coming';
+        if (status === 'maybe') return 'Maybe';
+        if (status === 'not_going') return 'Not coming';
+        return status || '';
+      }
+
+      function renderGifts(gifts, show) {
+        if (!show) return '';
+        const list = Array.isArray(gifts) ? gifts : [];
+        if (!list.length) {
+          return `
+            <div class="invite-card-panel" id="invite-gifts-panel">
+              <h2>Gift Registry</h2>
+              <p class="card-desc">The host has not added gift ideas yet.</p>
+            </div>`;
+        }
+        return `
+          <div class="invite-card-panel" id="invite-gifts-panel">
+            <h2>Gift Registry</h2>
+            <p class="card-desc">Ideas from the host — pick something if you’d like.</p>
+            <ul class="invite-gift-list">
+              ${list.map((g) => `
+                <li class="invite-gift-item ${g.claimed ? 'claimed' : ''}">
+                  <div>
+                    <strong>${Eventify.escapeHtml(g.name || 'Gift')}</strong>
+                    ${g.price ? `<span class="muted"> · $${Eventify.escapeHtml(String(g.price))}</span>` : ''}
+                    ${g.claimed ? '<span class="invite-gift-claimed">Claimed</span>' : ''}
+                  </div>
+                  ${g.url ? `<a class="btn btn-sm btn-outline" href="${Eventify.escapeHtml(g.url)}" target="_blank" rel="noopener">View</a>` : ''}
+                </li>`).join('')}
+            </ul>
+          </div>`;
+      }
+
+      function renderWhosComing(votes, counts, show) {
+        if (!show) return '';
+        const list = Array.isArray(votes) ? votes : [];
+        const going = list.filter((v) => v.status === 'going');
+        const maybe = list.filter((v) => v.status === 'maybe');
+        return `
+          <div class="invite-card-panel" id="invite-whos-panel">
+            <h2>Who's coming</h2>
+            <p class="card-desc">
+              ${Number(counts?.going || going.length)} coming
+              · ${Number(counts?.maybe || maybe.length)} maybe
+              · ${Number(counts?.total || list.length)} replies
+            </p>
+            ${list.length
+              ? `<ul class="invite-whos-list">
+                  ${list.map((v) => `
+                    <li class="invite-whos-row status-${Eventify.escapeHtml(v.status || '')}">
+                      <span>${Eventify.escapeHtml(v.name || 'Guest')}</span>
+                      <span class="invite-rsvp-status">${Eventify.escapeHtml(guestStatusLabel(v.status))}</span>
+                    </li>`).join('')}
+                </ul>`
+              : '<p class="card-desc">No replies yet — be the first!</p>'}
+          </div>`;
       }
 
       async function loadInvite() {
@@ -104,6 +164,9 @@
         }
 
         const e = data.event;
+        const opts = data.invite_options || {};
+        const showGifts = opts.showGiftRegistry !== false;
+        const showWhos = opts.guestsCanSeeWhosComing === true;
         const hostName = e.host_name || e.organizer_name || 'Host';
         document.title = `${e.title} — You're Invited`;
         const icon = typeof getCategoryIcon === 'function' ? getCategoryIcon(e.category) : '🎉';
@@ -125,7 +188,7 @@
 
             <div class="invite-card-panel" id="rsvp-panel">
               <h2>Will you attend?</h2>
-              <p class="card-desc">Tell <strong>${Eventify.escapeHtml(hostName)}</strong> if you're coming. Only the host can see responses.</p>
+              <p class="card-desc">Tell <strong>${Eventify.escapeHtml(hostName)}</strong> if you're coming.${showWhos ? '' : ' Only the host sees full RSVP details unless they share “Who’s coming”.'}</p>
               <div class="form-group">
                 <label for="guest_name">Your name *</label>
                 <input type="text" id="guest_name" placeholder="Your full name" required>
@@ -141,6 +204,9 @@
               </div>
               <p id="rsvp-feedback" class="invite-feedback hidden" aria-live="polite"></p>
             </div>
+
+            ${renderGifts(data.gifts, showGifts)}
+            ${renderWhosComing(data.votes, data.counts, showWhos)}
           </div>
         `;
 

@@ -141,7 +141,7 @@ const CATEGORIES = [
 const CUSTOM_CATEGORY = 'Custom';
 
 /** Core planner tabs always available */
-const PLANNER_CORE_TABS = ['basics', 'planning', 'ai', 'settings', 'invites'];
+const PLANNER_CORE_TABS = ['basics', 'planning', 'ai', 'settings', 'invites', 'gifts'];
 
 /**
  * Relevant planner tabs per category (slug). Keep lists short — only the most useful tools.

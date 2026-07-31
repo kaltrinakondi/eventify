@@ -2257,6 +2257,8 @@ const EventPlanner = {
         allowComments: document.getElementById('allow_comments').checked,
         allowSharing: document.getElementById('allow_sharing').checked,
         useGuestList: document.getElementById('use_guest_list')?.checked || false,
+        showGiftRegistryOnInvite: document.getElementById('show_gift_registry_on_invite')?.checked !== false,
+        guestsCanSeeWhosComing: document.getElementById('guests_can_see_whos_coming')?.checked === true,
         registrationDeadline: document.getElementById('registration_deadline').value,
         cancellationPolicy: document.getElementById('cancellation_policy').value,
         ageRestriction: document.getElementById('age_restriction').value,
@@ -2549,6 +2551,12 @@ const EventPlanner = {
     }
     document.getElementById('allow_comments').checked = s.allowComments !== false;
     document.getElementById('allow_sharing').checked = s.allowSharing !== false;
+    if (document.getElementById('show_gift_registry_on_invite')) {
+      document.getElementById('show_gift_registry_on_invite').checked = s.showGiftRegistryOnInvite !== false;
+    }
+    if (document.getElementById('guests_can_see_whos_coming')) {
+      document.getElementById('guests_can_see_whos_coming').checked = s.guestsCanSeeWhosComing === true;
+    }
     document.getElementById('registration_deadline').value = s.registrationDeadline || '';
     document.getElementById('cancellation_policy').value = s.cancellationPolicy || '';
     document.getElementById('age_restriction').value = s.ageRestriction || '';
