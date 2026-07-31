@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Event - Eventify Planner</title>
-  <link rel="stylesheet" href="css/style.css?v=56">
+  <link rel="stylesheet" href="css/style.css?v=57">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <script src="js/theme.js"></script>
   <script src="js/auth-gate.js?v=6"></script>
@@ -72,6 +72,9 @@
         <button type="button" class="planner-tab" data-tab="guests">Guests</button>
         <button type="button" class="planner-tab" data-tab="budget">Budget</button>
         <button type="button" class="planner-tab" data-tab="vendors">Vendors</button>
+        <button type="button" class="planner-tab" data-tab="tickets">Tickets</button>
+        <button type="button" class="planner-tab" data-tab="stages">Stages &amp; Vendors</button>
+        <button type="button" class="planner-tab" data-tab="security">Security</button>
         <button type="button" class="planner-tab" data-tab="schedule">Schedule</button>
         <button type="button" class="planner-tab" data-tab="documents">Documents</button>
         <button type="button" class="planner-tab" data-tab="board">To-Do Board</button>
@@ -314,6 +317,54 @@
           <div class="planner-card">
             <h3>Planning &amp; Organization</h3>
             <p class="card-desc">Notes, checklist, expenses, and supplier details for the whole production.</p>
+
+            <div id="festival-planning-fields" class="festival-planning-fields hidden">
+              <h4 class="festival-planning-title">Music Festival essentials</h4>
+              <p class="card-desc">Only the fields that help you run a festival — keep it light.</p>
+              <div class="planner-grid-2">
+                <div class="form-group">
+                  <label for="festival_theme">Festival theme</label>
+                  <select id="festival_theme">
+                    <option value="">Select theme</option>
+                    <option value="EDM">EDM</option>
+                    <option value="Hip-Hop">Hip-Hop</option>
+                    <option value="Rock">Rock</option>
+                    <option value="Pop">Pop</option>
+                    <option value="Mixed">Mixed</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="festival_attendance">Expected attendance</label>
+                  <input type="number" id="festival_attendance" min="0" placeholder="e.g. 5000">
+                </div>
+              </div>
+              <fieldset class="festival-layout-fieldset">
+                <legend>Venue layout</legend>
+                <div class="festival-layout-checks">
+                  <label class="toggle-row"><input type="checkbox" id="layout_main_stage"> Main stage</label>
+                  <label class="toggle-row"><input type="checkbox" id="layout_food_zone"> Food zone</label>
+                  <label class="toggle-row"><input type="checkbox" id="layout_toilets"> Toilets</label>
+                  <label class="toggle-row"><input type="checkbox" id="layout_parking"> Parking</label>
+                </div>
+              </fieldset>
+              <div class="form-group">
+                <label for="festival_lineup">Artist lineup (summary)</label>
+                <textarea id="festival_lineup" rows="3" placeholder="Headliners and support acts…"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="festival_sound_lighting">Sound &amp; lighting setup</label>
+                <textarea id="festival_sound_lighting" rows="2" placeholder="PA, monitors, lighting package…"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="festival_permits">Permits and insurance</label>
+                <textarea id="festival_permits" rows="2" placeholder="Permits status, insurance provider, deadlines…"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="festival_volunteers">Volunteer coordination</label>
+                <textarea id="festival_volunteers" rows="2" placeholder="Shifts, roles, meetup point…"></textarea>
+              </div>
+            </div>
+
             <div class="form-group">
               <label for="planning_notes">Planning Notes</label>
               <textarea id="planning_notes" rows="6" placeholder="Overall vision, constraints, style notes…"></textarea>
@@ -511,11 +562,71 @@
           </div>
         </section>
 
+        <!-- TICKETS (Music Festival) -->
+        <section class="planner-panel" id="tab-tickets">
+          <div class="planner-card">
+            <h3>Tickets</h3>
+            <p class="card-desc">VIP, Standard, and Early Bird tiers with capacity and QR check-in.</p>
+            <div class="list-toolbar">
+              <button type="button" class="btn btn-sm btn-secondary" id="add-ticket-tier">+ Add Ticket Tier</button>
+            </div>
+            <div class="dynamic-list" id="ticket-list"></div>
+          </div>
+        </section>
+
+        <!-- STAGES & VENDORS (Music Festival) -->
+        <section class="planner-panel" id="tab-stages">
+          <div class="planner-card">
+            <h3>Stages</h3>
+            <p class="card-desc">Main and secondary stages. Assign artists in the Schedule tab.</p>
+            <div class="list-toolbar">
+              <button type="button" class="btn btn-sm btn-secondary" id="add-stage">+ Add Stage</button>
+            </div>
+            <div class="dynamic-list" id="stage-list"></div>
+          </div>
+          <div class="planner-card" style="margin-top:16px;">
+            <h3>Food, drink &amp; sponsor booths</h3>
+            <p class="card-desc">Vendors and sponsor booths on the festival grounds.</p>
+            <div class="list-toolbar">
+              <button type="button" class="btn btn-sm btn-secondary" id="add-festival-vendor">+ Add Vendor / Booth</button>
+            </div>
+            <div class="dynamic-list" id="festival-vendor-list"></div>
+          </div>
+        </section>
+
+        <!-- SECURITY (Music Festival) -->
+        <section class="planner-panel" id="tab-security">
+          <div class="planner-card">
+            <h3>Security &amp; Safety</h3>
+            <p class="card-desc">Entry points, staff, medical cover, and crowd control.</p>
+            <div class="form-group">
+              <label for="security_entry_exit">Entry and exit points</label>
+              <textarea id="security_entry_exit" rows="2" placeholder="Main gate, VIP lane, emergency exits…"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="security_staff">Security staff</label>
+              <textarea id="security_staff" rows="2" placeholder="Headcount, agencies, shift leads…"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="security_emergency">Emergency contacts</label>
+              <textarea id="security_emergency" rows="2" placeholder="Police, fire, festival control room…"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="security_medical">Medical point</label>
+              <input type="text" id="security_medical" placeholder="Location and first-aid provider">
+            </div>
+            <div class="form-group">
+              <label for="security_crowd">Crowd control notes</label>
+              <textarea id="security_crowd" rows="3" placeholder="Capacity soft limits, barricade plan, peak-time notes…"></textarea>
+            </div>
+          </div>
+        </section>
+
         <!-- SCHEDULE -->
         <section class="planner-panel" id="tab-schedule">
           <div class="planner-card">
-            <h3>Event Schedule</h3>
-            <p class="card-desc">Build the day-of timeline with owners and notes.</p>
+            <h3 id="schedule-heading">Event Schedule</h3>
+            <p class="card-desc" id="schedule-desc">Build the day-of timeline with owners and notes.</p>
             <div class="list-toolbar">
               <button type="button" class="btn btn-sm btn-secondary" id="add-schedule-row">+ Add Activity</button>
             </div>
@@ -937,12 +1048,12 @@
 
   <script src="js/vendor/supabase.js"></script>
   <script src="js/supabase-config.js"></script>
-  <script src="js/categories.js?v=9"></script>
-  <script src="js/ai-planner.js?v=5"></script>
+  <script src="js/categories.js?v=10"></script>
+  <script src="js/ai-planner.js?v=6"></script>
   <script src="js/api.js?v=22"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
   <script src="js/app.js?v=21"></script>
-  <script src="js/event-planner.js?v=40"></script>
+  <script src="js/event-planner.js?v=41"></script>
 </body>
 </html>

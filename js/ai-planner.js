@@ -156,27 +156,50 @@ const AIPlanner = {
         { title: 'Trophies & medals', priority: 'medium' },
       ],
     },
-    Festivals: {
+    'Music Festivals': {
       ideas: [
-        'Vendor map and booth assignments',
-        'Parking and shuttle plan',
+        'Artist lineup with stage time slots',
+        'VIP / Standard / Early Bird ticket tiers',
+        'Sound & lighting package for main stage',
         'Volunteer shifts and check-in',
-        'Main stage schedule and side activities',
-        'Waste, recycling, and restrooms',
+        'Security entry lanes and medical point',
       ],
       tips: [
-        'Brief all vendors on load-in windows and power drop locations.',
+        'Lock permits and insurance early, then confirm load-in windows with every vendor.',
       ],
       timeline: [
-        { offset: '-3 months', activity: 'Vendor applications; permits' },
-        { offset: '-1 month', activity: 'Site map; volunteer recruitment' },
-        { offset: 'Day of', activity: 'Gates, programming, teardown plan' },
+        { offset: '-3 months', activity: 'Permits, insurance, headliner booking' },
+        { offset: '-1 month', activity: 'Vendor booths, volunteer roster, ticket caps' },
+        { offset: 'Day of', activity: 'Gates, lineup, crowd control, teardown' },
       ],
       checklist: [
-        { title: 'Secure permits', priority: 'high' },
-        { title: 'Confirm vendors & power', priority: 'high' },
-        { title: 'Volunteer schedule', priority: 'medium' },
-        { title: 'Parking plan', priority: 'medium' },
+        { title: 'Secure permits & insurance', priority: 'high' },
+        { title: 'Confirm artist lineup & stages', priority: 'high' },
+        { title: 'Ticket tiers + capacity limits', priority: 'high' },
+        { title: 'Volunteer & security schedule', priority: 'medium' },
+      ],
+    },
+    Festivals: {
+      ideas: [
+        'Artist lineup with stage time slots',
+        'VIP / Standard / Early Bird ticket tiers',
+        'Sound & lighting package for main stage',
+        'Volunteer shifts and check-in',
+        'Security entry lanes and medical point',
+      ],
+      tips: [
+        'Lock permits and insurance early, then confirm load-in windows with every vendor.',
+      ],
+      timeline: [
+        { offset: '-3 months', activity: 'Permits, insurance, headliner booking' },
+        { offset: '-1 month', activity: 'Vendor booths, volunteer roster, ticket caps' },
+        { offset: 'Day of', activity: 'Gates, lineup, crowd control, teardown' },
+      ],
+      checklist: [
+        { title: 'Secure permits & insurance', priority: 'high' },
+        { title: 'Confirm artist lineup & stages', priority: 'high' },
+        { title: 'Ticket tiers + capacity limits', priority: 'high' },
+        { title: 'Volunteer & security schedule', priority: 'medium' },
       ],
     },
     Workshops: {
@@ -645,6 +668,15 @@ const AIPlanner = {
       ],
       vendorRecommendations: ['Equipment rental', 'Medical staff', 'Referees', 'Photographers'],
       moodPalette: ['#14532d', '#22c55e', '#f8fafc', '#0ea5e9'],
+    },
+    'Music Festivals': {
+      decorations: ['Entrance gate', 'Stage banners', 'VIP lounge signs', 'Night string lights'],
+      budgetSuggestions: [
+        { item: 'Site & permits', pct: 20 }, { item: 'Stages / AV', pct: 25 }, { item: 'Artists', pct: 20 },
+        { item: 'Security', pct: 15 }, { item: 'Staff & volunteers', pct: 20 },
+      ],
+      vendorRecommendations: ['Stage production', 'Sound & lighting', 'Security', 'Food vendors', 'Sanitation'],
+      moodPalette: ['#422006', '#f59e0b', '#ec4899', '#14b8a6'],
     },
     Festivals: {
       decorations: ['Entrance gate', 'Stage banners', 'Vendor lane signs', 'Night string lights'],

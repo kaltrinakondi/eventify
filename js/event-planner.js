@@ -27,6 +27,9 @@ const EventPlanner = {
     guestPhotos: [],
     gifts: [],
     feedback: [],
+    tickets: [],
+    stages: [],
+    festivalVendors: [],
   },
 
   uid() {
@@ -54,6 +57,9 @@ const EventPlanner = {
     this.bindGuests();
     this.bindBudget();
     this.bindVendors();
+    this.bindTickets();
+    this.bindStages();
+    this.bindSecurity();
     this.bindSchedule();
     this.bindDocuments();
     this.bindBoard();
@@ -163,9 +169,37 @@ const EventPlanner = {
       hint.textContent = `Planning tools for ${label} — only the most useful sections are shown.`;
     }
 
+    this.syncFestivalPlanningUI();
+
     if (activeHidden) {
       document.querySelector('.planner-tab[data-tab="basics"]:not(.tab-hidden)')?.click();
     }
+  },
+
+  isFestivalEvent() {
+    const cat = this.getSelectedCategory() || document.getElementById('category')?.value || '';
+    if (typeof isMusicFestivalCategory === 'function') return isMusicFestivalCategory(cat);
+    return typeof getCategorySlug === 'function' && getCategorySlug(cat) === 'festivals';
+  },
+
+  syncFestivalPlanningUI() {
+    const box = document.getElementById('festival-planning-fields');
+    const show = this.isFestivalEvent();
+    box?.classList.toggle('hidden', !show);
+
+    const heading = document.getElementById('schedule-heading');
+    const desc = document.getElementById('schedule-desc');
+    const addBtn = document.getElementById('add-schedule-row');
+    if (show) {
+      if (heading) heading.textContent = 'Artist Lineup & Schedule';
+      if (desc) desc.textContent = 'Add time slots with artist and stage assignments.';
+      if (addBtn) addBtn.textContent = '+ Add Set';
+    } else {
+      if (heading) heading.textContent = 'Event Schedule';
+      if (desc) desc.textContent = 'Build the day-of timeline with owners and notes.';
+      if (addBtn) addBtn.textContent = '+ Add Activity';
+    }
+    this.renderSchedule();
   },
 
   bindBasics() {
@@ -272,6 +306,7 @@ const EventPlanner = {
       this.refreshAI();
       this.updatePlannerHeader();
       this.applyCategoryTabFilter();
+      this.syncFestivalPlanningUI();
     });
     document.getElementById('btn-apply-category-pack')?.addEventListener('click', () => this.applyAI());
     document.getElementById('btn-open-ai-tab')?.addEventListener('click', () => {
@@ -1071,13 +1106,56 @@ const EventPlanner = {
     });
   },
 
+  bindTickets() {
+    document.getElementById('add-ticket-tier')?.addEventListener('click', () => {
+      this.state.tickets.push({
+        id: this.uid(),
+        tier: 'Standard',
+        price: 0,
+        capacity: 0,
+        qrCheckIn: true,
+      });
+      this.renderTickets();
+    });
+  },
+
+  bindStages() {
+    document.getElementById('add-stage')?.addEventListener('click', () => {
+      const n = this.state.stages.length;
+      this.state.stages.push({
+        id: this.uid(),
+        name: n === 0 ? 'Main Stage' : `Stage ${n + 1}`,
+        kind: n === 0 ? 'main' : 'secondary',
+        notes: '',
+      });
+      this.renderStages();
+      this.renderSchedule();
+    });
+    document.getElementById('add-festival-vendor')?.addEventListener('click', () => {
+      this.state.festivalVendors.push({
+        id: this.uid(),
+        name: '',
+        kind: 'food',
+        booth: '',
+        notes: '',
+      });
+      this.renderFestivalVendors();
+    });
+  },
+
+  bindSecurity() {
+    // Values collected from form fields on save — no list bindings needed
+  },
+
   bindSchedule() {
     document.getElementById('add-schedule-row')?.addEventListener('click', () => {
+      const festival = this.isFestivalEvent();
       this.state.schedule.push({
         id: this.uid(),
         time: '',
-        activity: '',
+        activity: festival ? '' : '',
         person: '',
+        stage: this.state.stages[0]?.name || '',
         notes: '',
       });
       this.renderSchedule();
@@ -1491,6 +1569,9 @@ const EventPlanner = {
     this.renderGuests();
     this.renderBudget();
     this.renderVendors();
+    this.renderTickets();
+    this.renderStages();
+    this.renderFestivalVendors();
     this.renderSchedule();
     this.renderDocuments();
     this.renderBoard();
@@ -1505,6 +1586,7 @@ const EventPlanner = {
     this.renderGifts();
     this.renderFeedback();
     this.refreshAnalytics();
+    this.syncFestivalPlanningUI();
   },
 
   renderChecklist() {
@@ -1692,28 +1774,204 @@ const EventPlanner = {
 
   renderSchedule() {
     const list = document.getElementById('schedule-list');
-    list.innerHTML = this.state.schedule.map(s => `
-      <div class="dynamic-row schedule-row" data-id="${s.id}">
-        <input type="time" data-field="time" value="${this.escape(s.time || '')}">
-        <input type="text" data-field="activity" value="${this.escape(s.activity)}" placeholder="Activity">
-        <input type="text" data-field="person" value="${this.escape(s.person)}" placeholder="Responsible">
-        <input type="text" data-field="notes" value="${this.escape(s.notes)}" placeholder="Notes">
-        <button type="button" class="icon-btn" data-remove>×</button>
-      </div>
-    `).join('') || '<p class="empty-state">No schedule items yet.</p>';
+    if (!list) return;
+    const festival = this.isFestivalEvent();
+    const stageOpts = this.state.stages.length
+      ? this.state.stages.map((st) => st.name).filter(Boolean)
+      : ['Main Stage', 'Secondary Stage'];
 
-    list.querySelectorAll('.schedule-row').forEach(row => {
+    if (festival) {
+      list.innerHTML = this.state.schedule.map((s) => `
+        <div class="dynamic-row schedule-row schedule-row--festival" data-id="${s.id}">
+          <input type="time" data-field="time" value="${this.escape(s.time || '')}" title="Start time">
+          <input type="text" data-field="person" value="${this.escape(s.person || '')}" placeholder="Artist">
+          <input type="text" data-field="activity" value="${this.escape(s.activity || '')}" placeholder="Set / slot name">
+          <select data-field="stage" aria-label="Stage">
+            <option value="">Stage</option>
+            ${stageOpts.map((name) => `<option value="${this.escape(name)}" ${s.stage === name ? 'selected' : ''}>${this.escape(name)}</option>`).join('')}
+          </select>
+          <input type="text" data-field="notes" value="${this.escape(s.notes || '')}" placeholder="Notes">
+          <button type="button" class="icon-btn" data-remove>×</button>
+        </div>
+      `).join('') || '<p class="empty-state">No lineup slots yet. Add a set with time, artist, and stage.</p>';
+    } else {
+      list.innerHTML = this.state.schedule.map((s) => `
+        <div class="dynamic-row schedule-row" data-id="${s.id}">
+          <input type="time" data-field="time" value="${this.escape(s.time || '')}">
+          <input type="text" data-field="activity" value="${this.escape(s.activity || '')}" placeholder="Activity">
+          <input type="text" data-field="person" value="${this.escape(s.person || '')}" placeholder="Responsible">
+          <input type="text" data-field="notes" value="${this.escape(s.notes || '')}" placeholder="Notes">
+          <button type="button" class="icon-btn" data-remove>×</button>
+        </div>
+      `).join('') || '<p class="empty-state">No schedule items yet.</p>';
+    }
+
+    list.querySelectorAll('.schedule-row').forEach((row) => {
       const id = row.dataset.id;
-      const s = this.state.schedule.find(x => x.id === id);
-      row.querySelectorAll('[data-field]').forEach(el => {
+      const s = this.state.schedule.find((x) => x.id === id);
+      row.querySelectorAll('[data-field]').forEach((el) => {
         el.addEventListener('input', () => { s[el.dataset.field] = el.value; });
         el.addEventListener('change', () => { s[el.dataset.field] = el.value; });
       });
       row.querySelector('[data-remove]')?.addEventListener('click', () => {
-        this.state.schedule = this.state.schedule.filter(x => x.id !== id);
+        this.state.schedule = this.state.schedule.filter((x) => x.id !== id);
         this.renderSchedule();
       });
     });
+  },
+
+  renderTickets() {
+    const list = document.getElementById('ticket-list');
+    if (!list) return;
+    list.innerHTML = this.state.tickets.map((t) => `
+      <div class="dynamic-row ticket-row" data-id="${t.id}">
+        <select data-field="tier">
+          <option value="VIP" ${t.tier === 'VIP' ? 'selected' : ''}>VIP</option>
+          <option value="Standard" ${t.tier === 'Standard' || !t.tier ? 'selected' : ''}>Standard</option>
+          <option value="Early Bird" ${t.tier === 'Early Bird' ? 'selected' : ''}>Early Bird</option>
+        </select>
+        <input type="number" data-field="price" min="0" step="0.01" value="${Number(t.price) || 0}" placeholder="Price">
+        <input type="number" data-field="capacity" min="0" value="${Number(t.capacity) || 0}" placeholder="Capacity">
+        <label class="ticket-qr-label" title="QR check-in">
+          <input type="checkbox" data-field="qrCheckIn" ${t.qrCheckIn !== false ? 'checked' : ''}> QR check-in
+        </label>
+        <button type="button" class="icon-btn" data-remove>×</button>
+      </div>
+    `).join('') || '<p class="empty-state">No ticket tiers yet. Add VIP, Standard, or Early Bird.</p>';
+
+    list.querySelectorAll('.ticket-row').forEach((row) => {
+      const id = row.dataset.id;
+      const t = this.state.tickets.find((x) => x.id === id);
+      row.querySelectorAll('[data-field]').forEach((el) => {
+        const sync = () => {
+          if (el.type === 'checkbox') t[el.dataset.field] = el.checked;
+          else if (el.type === 'number') t[el.dataset.field] = parseFloat(el.value) || 0;
+          else t[el.dataset.field] = el.value;
+        };
+        el.addEventListener('input', sync);
+        el.addEventListener('change', sync);
+      });
+      row.querySelector('[data-remove]')?.addEventListener('click', () => {
+        this.state.tickets = this.state.tickets.filter((x) => x.id !== id);
+        this.renderTickets();
+      });
+    });
+  },
+
+  renderStages() {
+    const list = document.getElementById('stage-list');
+    if (!list) return;
+    list.innerHTML = this.state.stages.map((st) => `
+      <div class="dynamic-row stage-row" data-id="${st.id}">
+        <input type="text" data-field="name" value="${this.escape(st.name || '')}" placeholder="Stage name">
+        <select data-field="kind">
+          <option value="main" ${st.kind === 'main' ? 'selected' : ''}>Main stage</option>
+          <option value="secondary" ${st.kind !== 'main' ? 'selected' : ''}>Secondary</option>
+        </select>
+        <input type="text" data-field="notes" value="${this.escape(st.notes || '')}" placeholder="Notes">
+        <button type="button" class="icon-btn" data-remove>×</button>
+      </div>
+    `).join('') || '<p class="empty-state">No stages yet. Add a main stage to start.</p>';
+
+    list.querySelectorAll('.stage-row').forEach((row) => {
+      const id = row.dataset.id;
+      const st = this.state.stages.find((x) => x.id === id);
+      row.querySelectorAll('[data-field]').forEach((el) => {
+        el.addEventListener('input', () => {
+          st[el.dataset.field] = el.value;
+          if (el.dataset.field === 'name') this.renderSchedule();
+        });
+        el.addEventListener('change', () => {
+          st[el.dataset.field] = el.value;
+          if (el.dataset.field === 'name') this.renderSchedule();
+        });
+      });
+      row.querySelector('[data-remove]')?.addEventListener('click', () => {
+        this.state.stages = this.state.stages.filter((x) => x.id !== id);
+        this.renderStages();
+        this.renderSchedule();
+      });
+    });
+  },
+
+  renderFestivalVendors() {
+    const list = document.getElementById('festival-vendor-list');
+    if (!list) return;
+    list.innerHTML = this.state.festivalVendors.map((v) => `
+      <div class="dynamic-row festival-vendor-row" data-id="${v.id}">
+        <input type="text" data-field="name" value="${this.escape(v.name || '')}" placeholder="Name">
+        <select data-field="kind">
+          <option value="food" ${v.kind === 'food' ? 'selected' : ''}>Food</option>
+          <option value="drink" ${v.kind === 'drink' ? 'selected' : ''}>Drink</option>
+          <option value="sponsor" ${v.kind === 'sponsor' ? 'selected' : ''}>Sponsor booth</option>
+        </select>
+        <input type="text" data-field="booth" value="${this.escape(v.booth || '')}" placeholder="Booth / zone">
+        <input type="text" data-field="notes" value="${this.escape(v.notes || '')}" placeholder="Notes">
+        <button type="button" class="icon-btn" data-remove>×</button>
+      </div>
+    `).join('') || '<p class="empty-state">No food, drink, or sponsor booths yet.</p>';
+
+    list.querySelectorAll('.festival-vendor-row').forEach((row) => {
+      const id = row.dataset.id;
+      const v = this.state.festivalVendors.find((x) => x.id === id);
+      row.querySelectorAll('[data-field]').forEach((el) => {
+        el.addEventListener('input', () => { v[el.dataset.field] = el.value; });
+        el.addEventListener('change', () => { v[el.dataset.field] = el.value; });
+      });
+      row.querySelector('[data-remove]')?.addEventListener('click', () => {
+        this.state.festivalVendors = this.state.festivalVendors.filter((x) => x.id !== id);
+        this.renderFestivalVendors();
+      });
+    });
+  },
+
+  collectFestivalPlanning() {
+    return {
+      theme: document.getElementById('festival_theme')?.value || '',
+      expectedAttendance: parseInt(document.getElementById('festival_attendance')?.value, 10) || 0,
+      venueLayout: {
+        mainStage: !!document.getElementById('layout_main_stage')?.checked,
+        foodZone: !!document.getElementById('layout_food_zone')?.checked,
+        toilets: !!document.getElementById('layout_toilets')?.checked,
+        parking: !!document.getElementById('layout_parking')?.checked,
+      },
+      artistLineup: document.getElementById('festival_lineup')?.value || '',
+      soundLighting: document.getElementById('festival_sound_lighting')?.value || '',
+      permitsInsurance: document.getElementById('festival_permits')?.value || '',
+      volunteerCoordination: document.getElementById('festival_volunteers')?.value || '',
+    };
+  },
+
+  collectSecurity() {
+    return {
+      entryExitPoints: document.getElementById('security_entry_exit')?.value || '',
+      staff: document.getElementById('security_staff')?.value || '',
+      emergencyContacts: document.getElementById('security_emergency')?.value || '',
+      medicalPoint: document.getElementById('security_medical')?.value || '',
+      crowdControlNotes: document.getElementById('security_crowd')?.value || '',
+    };
+  },
+
+  hydrateFestivalPlanning(pd) {
+    const f = pd.festival || {};
+    const layout = f.venueLayout || {};
+    if (document.getElementById('festival_theme')) document.getElementById('festival_theme').value = f.theme || '';
+    if (document.getElementById('festival_attendance')) document.getElementById('festival_attendance').value = f.expectedAttendance || '';
+    if (document.getElementById('layout_main_stage')) document.getElementById('layout_main_stage').checked = !!layout.mainStage;
+    if (document.getElementById('layout_food_zone')) document.getElementById('layout_food_zone').checked = !!layout.foodZone;
+    if (document.getElementById('layout_toilets')) document.getElementById('layout_toilets').checked = !!layout.toilets;
+    if (document.getElementById('layout_parking')) document.getElementById('layout_parking').checked = !!layout.parking;
+    if (document.getElementById('festival_lineup')) document.getElementById('festival_lineup').value = f.artistLineup || '';
+    if (document.getElementById('festival_sound_lighting')) document.getElementById('festival_sound_lighting').value = f.soundLighting || '';
+    if (document.getElementById('festival_permits')) document.getElementById('festival_permits').value = f.permitsInsurance || '';
+    if (document.getElementById('festival_volunteers')) document.getElementById('festival_volunteers').value = f.volunteerCoordination || '';
+
+    const sec = pd.security || {};
+    if (document.getElementById('security_entry_exit')) document.getElementById('security_entry_exit').value = sec.entryExitPoints || '';
+    if (document.getElementById('security_staff')) document.getElementById('security_staff').value = sec.staff || '';
+    if (document.getElementById('security_emergency')) document.getElementById('security_emergency').value = sec.emergencyContacts || '';
+    if (document.getElementById('security_medical')) document.getElementById('security_medical').value = sec.medicalPoint || '';
+    if (document.getElementById('security_crowd')) document.getElementById('security_crowd').value = sec.crowdControlNotes || '';
   },
 
   renderDocuments() {
@@ -1990,6 +2248,11 @@ const EventPlanner = {
         prompt: document.getElementById('feedback_prompt')?.value || '',
         reviews: this.state.feedback,
       },
+      tickets: this.state.tickets,
+      stages: this.state.stages,
+      festivalVendors: this.state.festivalVendors,
+      festival: this.collectFestivalPlanning(),
+      security: this.collectSecurity(),
       settings: {
         allowComments: document.getElementById('allow_comments').checked,
         allowSharing: document.getElementById('allow_sharing').checked,
@@ -2255,6 +2518,10 @@ const EventPlanner = {
     this.state.guestPhotos = pd.guestGallery?.photos || [];
     this.state.gifts = pd.gifts || [];
     this.state.feedback = pd.feedback?.reviews || [];
+    this.state.tickets = pd.tickets || [];
+    this.state.stages = pd.stages || [];
+    this.state.festivalVendors = pd.festivalVendors || [];
+    this.hydrateFestivalPlanning(pd);
 
     if (document.getElementById('invite_subject')) {
       document.getElementById('invite_subject').value = pd.invitations?.subject || '';

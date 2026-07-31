@@ -48,12 +48,12 @@ const CATEGORIES = [
     noteOptions: ['Sport type', 'Teams / brackets', 'Referees needed', 'First aid', 'Spectator capacity', 'Weather backup'],
   },
   {
-    name: 'Festivals',
+    name: 'Music Festivals',
     slug: 'festivals',
     icon: '🎉',
-    tagline: 'Crowds, stages & all-day vibes',
-    aliases: ['Festival', 'Festivals'],
-    noteOptions: ['Theme', 'Vendor count', 'Stages', 'Family friendly', 'Camping / parking', 'Permits status'],
+    tagline: 'Stages, lineup & festival energy',
+    aliases: ['Festival', 'Festivals', 'Music Festival', 'Music Festivals'],
+    noteOptions: ['Festival theme', 'Expected attendance', 'Main stage plan', 'Artist lineup', 'Permits & insurance', 'Volunteer needs'],
   },
   {
     name: 'Workshops',
@@ -148,23 +148,52 @@ const PLANNER_CORE_TABS = ['basics', 'planning', 'ai', 'settings', 'invites'];
  * Core tabs are always shown in addition to these.
  */
 const CATEGORY_PLANNER_TABS = {
-  weddings: ['guests', 'seating', 'gifts', 'menu', 'vendors', 'schedule', 'playlist', 'photos', 'budget', 'documents'],
-  birthday: ['guests', 'gifts', 'playlist', 'photos', 'schedule', 'menu', 'budget', 'board'],
-  conferences: ['schedule', 'guests', 'vendors', 'documents', 'certs', 'budget', 'team', 'board'],
+  weddings: ['guests', 'seating', 'gifts', 'menu', 'vendors', 'schedule', 'playlist', 'photos', 'budget'],
+  birthday: ['guests', 'gifts', 'playlist', 'photos', 'schedule', 'menu', 'budget'],
+  conferences: ['schedule', 'guests', 'vendors', 'documents', 'certs', 'budget', 'team'],
   business: ['schedule', 'guests', 'documents', 'reminders', 'board', 'budget'],
-  music: ['schedule', 'vendors', 'guests', 'playlist', 'photos', 'team', 'budget'],
-  sports: ['schedule', 'team', 'guests', 'budget', 'documents', 'board'],
-  festivals: ['vendors', 'schedule', 'team', 'guests', 'budget', 'photos', 'documents'],
+  music: ['schedule', 'guests', 'playlist', 'photos', 'team', 'budget', 'vendors'],
+  sports: ['schedule', 'team', 'guests', 'budget', 'documents'],
+  festivals: ['tickets', 'stages', 'security', 'schedule', 'guests', 'budget', 'team', 'playlist', 'photos'],
   workshops: ['guests', 'schedule', 'documents', 'certs', 'budget', 'team'],
   graduation: ['guests', 'seating', 'certs', 'photos', 'schedule', 'gifts'],
   baby: ['guests', 'gifts', 'photos', 'menu', 'schedule', 'playlist'],
-  charity: ['guests', 'gifts', 'vendors', 'team', 'budget', 'photos', 'schedule', 'documents'],
-  networking: ['guests', 'schedule', 'team', 'documents', 'reminders', 'board'],
-  private: ['guests', 'playlist', 'photos', 'schedule', 'seating', 'budget'],
+  charity: ['guests', 'gifts', 'vendors', 'team', 'budget', 'photos', 'schedule'],
+  networking: ['guests', 'schedule', 'team', 'documents', 'reminders'],
+  private: ['guests', 'playlist', 'photos', 'schedule', 'budget'],
   food: ['menu', 'vendors', 'guests', 'photos', 'schedule', 'budget'],
   art: ['schedule', 'vendors', 'guests', 'photos', 'budget', 'documents'],
-  custom: ['guests', 'budget', 'schedule', 'photos', 'documents', 'board', 'vendors'],
+  custom: ['guests', 'budget', 'schedule', 'photos', 'documents', 'vendors'],
 };
+
+/** Detail-page sections per category (slug). Always includes overview + gallery when useful. */
+const CATEGORY_DETAIL_SECTIONS = {
+  weddings: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'budget', 'tasks', 'notes', 'gallery', 'files'],
+  birthday: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'budget', 'playlist', 'notes', 'gallery'],
+  conferences: ['overview', 'schedule', 'guests', 'rsvp', 'sponsors', 'budget', 'team', 'notes', 'gallery', 'files'],
+  business: ['overview', 'schedule', 'guests', 'tasks', 'notes', 'files'],
+  music: ['overview', 'schedule', 'guests', 'tickets', 'budget', 'team', 'playlist', 'gallery', 'notes'],
+  sports: ['overview', 'schedule', 'guests', 'team', 'budget', 'notes', 'gallery'],
+  festivals: ['overview', 'schedule', 'guests', 'tickets', 'budget', 'vendors', 'team', 'playlist', 'gallery', 'notes'],
+  workshops: ['overview', 'schedule', 'guests', 'team', 'budget', 'notes', 'files'],
+  graduation: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'gallery', 'notes'],
+  baby: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'playlist', 'gallery', 'notes'],
+  charity: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'budget', 'sponsors', 'team', 'gallery', 'notes'],
+  networking: ['overview', 'schedule', 'guests', 'team', 'notes', 'files'],
+  private: ['overview', 'schedule', 'guests', 'rsvp', 'playlist', 'budget', 'gallery', 'notes'],
+  food: ['overview', 'schedule', 'guests', 'vendors', 'budget', 'gallery', 'notes'],
+  art: ['overview', 'schedule', 'guests', 'tickets', 'budget', 'gallery', 'notes', 'files'],
+  custom: ['overview', 'schedule', 'guests', 'rsvp', 'budget', 'tasks', 'notes', 'gallery', 'files'],
+};
+
+function getDetailSectionsForCategory(categoryName) {
+  const slug = typeof getCategorySlug === 'function' ? getCategorySlug(categoryName) : 'custom';
+  return CATEGORY_DETAIL_SECTIONS[slug] || CATEGORY_DETAIL_SECTIONS.custom;
+}
+
+function isMusicFestivalCategory(categoryName) {
+  return getCategorySlug(categoryName) === 'festivals';
+}
 
 function getPlannerTabsForCategory(categoryName) {
   const slug = typeof getCategorySlug === 'function'
@@ -231,7 +260,8 @@ function getCategoryThemes(name) {
     'Business Meetings': ['Strategy offsite', 'Board review', 'Kickoff workshop', 'Client presentation'],
     'Music Concerts': ['Intimate acoustic', 'Festival stage', 'Club night', 'Outdoor amphitheater'],
     'Sports Events': ['Tournament day', 'Charity match', 'Fans meetup', 'Awards ceremony'],
-    Festivals: ['Food fair', 'Culture week', 'Music weekend', 'Family carnival'],
+    'Music Festivals': ['EDM weekend', 'Hip-Hop takeover', 'Rock open-air', 'Pop showcase', 'Mixed genre fest'],
+    Festivals: ['EDM weekend', 'Hip-Hop takeover', 'Rock open-air', 'Pop showcase', 'Mixed genre fest'],
     Workshops: ['Hands-on beginner', 'Masterclass', 'Team building lab', 'Creative studio'],
     Graduation: ['Formal ceremony', 'Garden reception', 'Family brunch', 'Alumni night'],
     'Baby Showers': ['Soft pastel', 'Neutral boho', 'Storybook theme', 'Brunch shower'],

@@ -2968,6 +2968,43 @@ html[data-theme="dark"] .detail-section-card {
 .dynamic-row.budget-row { grid-template-columns: 1.2fr 1fr 1fr 1fr 40px; }
 .dynamic-row.vendor-row { grid-template-columns: 130px 1fr 1fr 1.2fr 40px; }
 .dynamic-row.schedule-row { grid-template-columns: 110px 1.2fr 1fr 1.2fr 40px; }
+.dynamic-row.schedule-row--festival { grid-template-columns: 100px 1.1fr 1.1fr 1fr 1fr 40px; }
+.dynamic-row.ticket-row { grid-template-columns: 130px 100px 100px 1fr 40px; align-items: center; }
+.dynamic-row.stage-row { grid-template-columns: 1.2fr 130px 1.2fr 40px; }
+.dynamic-row.festival-vendor-row { grid-template-columns: 1.2fr 120px 1fr 1fr 40px; }
+.ticket-qr-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+.festival-planning-fields {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border, rgba(0,0,0,0.08));
+}
+.festival-planning-title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+}
+.festival-layout-fieldset {
+  border: 1px solid var(--border, rgba(0,0,0,0.1));
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+}
+.festival-layout-fieldset legend {
+  padding: 0 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.festival-layout-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+}
 .dynamic-row.reminder-row { grid-template-columns: 140px 1.4fr 140px 40px; }
 .dynamic-row.doc-row { grid-template-columns: 1fr auto auto; align-items: center; }
 .dynamic-row.team-row { grid-template-columns: 1fr 130px 1fr 1fr 40px; }
