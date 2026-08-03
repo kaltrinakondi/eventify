@@ -950,7 +950,7 @@
                 <input type="color" id="cert_bg_color" value="#ffffff">
               </div>
               <div class="form-group">
-                <label for="cert_text_color">Text color</label>
+                <label for="cert_text_color">Name color</label>
                 <input type="color" id="cert_text_color" value="#0f172a">
               </div>
               <div class="form-group">
@@ -962,6 +962,30 @@
                   <option value="'Trebuchet MS', sans-serif">Modern sans</option>
                   <option value="'Courier New', monospace">Typewriter</option>
                   <option value="'Brush Script MT', cursive">Script</option>
+                </select>
+              </div>
+            </div>
+            <div class="planner-grid-3">
+              <div class="form-group">
+                <label for="cert_name_size">Name size</label>
+                <select id="cert_name_size">
+                  <option value="22">Small</option>
+                  <option value="28" selected>Medium</option>
+                  <option value="36">Large</option>
+                  <option value="44">Extra large</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="cert_body_color">Body text color</label>
+                <input type="color" id="cert_body_color" value="#334155">
+              </div>
+              <div class="form-group">
+                <label for="cert_body_size">Body text size</label>
+                <select id="cert_body_size">
+                  <option value="14">Small</option>
+                  <option value="18" selected>Medium</option>
+                  <option value="24">Large</option>
+                  <option value="32">Extra large</option>
                 </select>
               </div>
             </div>
@@ -1136,6 +1160,6 @@
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
   <script src="js/app.js?v=23"></script>
-  <script src="js/event-planner.js?v=47"></script>
+  <script src="js/event-planner.js?v=48"></script>
 </body>
 </html>
