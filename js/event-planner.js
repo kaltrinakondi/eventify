@@ -52,6 +52,7 @@ const EventPlanner = {
     this.bindTabs();
     this.bindStickyChrome();
     this.bindBasics();
+    this.bindPlannerEventName();
     this.bindPlanning();
     this.bindAI();
     this.bindGuests();
@@ -431,9 +432,12 @@ const EventPlanner = {
     const subtitleEl = document.getElementById('planner-subtitle');
     const eyebrowEl = document.getElementById('planner-eyebrow');
     const nameEl = document.getElementById('planner-event-name');
+    const nameInput = document.getElementById('planner-event-title-input');
+    const nameLabel = document.getElementById('planner-event-label');
     if (!titleEl || !nameEl) return;
 
     const editing = !!this.editId;
+    const titleValue = (document.getElementById('title')?.value || '').trim();
     const label = this.getPlanningLabel();
     const shell = document.querySelector('.planner-shell');
     const catValue = document.getElementById('category')?.value || '';
@@ -465,18 +469,34 @@ const EventPlanner = {
       }
     }
 
-    if (label) {
+    if (nameLabel) nameLabel.textContent = editing ? 'Event:' : 'Planning:';
+
+    if (editing || label || catValue) {
       nameEl.classList.remove('hidden');
-      nameEl.innerHTML = `
-        <span class="planner-event-label">${editing ? 'Event' : 'Planning'}:</span>
-        <span class="planner-event-value">${this.escape(label)}</span>
-      `;
-      document.title = `${label} — Eventify Planner`;
+      if (nameInput && document.activeElement !== nameInput) {
+        nameInput.value = titleValue || '';
+        nameInput.placeholder = (!titleValue && label) ? label : 'Type event name…';
+      }
+      document.title = `${titleValue || label || 'Event'} — Eventify Planner`;
     } else {
       nameEl.classList.add('hidden');
-      nameEl.innerHTML = '';
       document.title = editing ? 'Edit Event - Eventify Planner' : 'Create Event - Eventify Planner';
     }
+  },
+
+  bindPlannerEventName() {
+    const nameInput = document.getElementById('planner-event-title-input');
+    const titleInput = document.getElementById('title');
+    if (!nameInput || nameInput.dataset.bound === '1') return;
+    nameInput.dataset.bound = '1';
+
+    const syncToBasics = () => {
+      if (titleInput) titleInput.value = nameInput.value;
+      this.updatePlannerHeader();
+    };
+
+    nameInput.addEventListener('input', syncToBasics);
+    nameInput.addEventListener('change', syncToBasics);
   },
 
   setVisibility(vis) {

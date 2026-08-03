@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Event - Eventify Planner</title>
-  <link rel="stylesheet" href="css/style.css?v=58">
+  <link rel="stylesheet" href="css/style.css?v=59">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <script src="js/theme.js"></script>
   <script src="js/auth-gate.js?v=6"></script>
@@ -42,7 +42,17 @@
           <h1 id="planner-title">Create Event</h1>
           <p class="subtitle" id="planner-subtitle">Professional event planning workspace</p>
         </div>
-        <p class="planner-event-name hidden" id="planner-event-name" aria-live="polite"></p>
+        <div class="planner-event-name hidden" id="planner-event-name">
+          <label class="planner-event-label" id="planner-event-label" for="planner-event-title-input">Event:</label>
+          <input
+            type="text"
+            id="planner-event-title-input"
+            class="planner-event-value-input"
+            placeholder="Type event name…"
+            maxlength="160"
+            aria-label="Event name"
+          >
+        </div>
         <div class="planner-actions">
           <div class="planner-action-group planner-host-actions" data-host-only>
             <button type="button" class="btn btn-planner btn-copy-link" id="btn-top-copy-invite" title="Copy invite link to share">
@@ -1066,6 +1076,6 @@
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
   <script src="js/app.js?v=23"></script>
-  <script src="js/event-planner.js?v=44"></script>
+  <script src="js/event-planner.js?v=45"></script>
 </body>
 </html>
