@@ -53,6 +53,7 @@ const EventPlanner = {
     this.bindStickyChrome();
     this.bindBasics();
     this.bindPlannerEventName();
+    this.bindThemePicker();
     this.bindPlanning();
     this.bindAI();
     this.bindGuests();
@@ -101,6 +102,10 @@ const EventPlanner = {
       this.refreshShareLinkUI();
       // Apply category presets only when creating (never when editing)
       this.applyUrlCategoryPreset();
+      // If no theme chosen yet, open the theme picker
+      if (!document.getElementById('category')?.value) {
+        setTimeout(() => this.openThemePicker(), 250);
+      }
     }
 
     this.updatePlannerHeader();
@@ -497,6 +502,82 @@ const EventPlanner = {
 
     nameInput.addEventListener('input', syncToBasics);
     nameInput.addEventListener('change', syncToBasics);
+  },
+
+  bindThemePicker() {
+    const open = () => this.openThemePicker();
+    document.getElementById('btn-choose-theme')?.addEventListener('click', open);
+    document.getElementById('btn-choose-theme-basics')?.addEventListener('click', open);
+
+    const modal = document.getElementById('theme-picker-modal');
+    modal?.querySelectorAll('[data-close-theme-picker]').forEach((el) => {
+      el.addEventListener('click', () => this.closeThemePicker());
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal && !modal.classList.contains('hidden')) {
+        this.closeThemePicker();
+      }
+    });
+  },
+
+  openThemePicker() {
+    const modal = document.getElementById('theme-picker-modal');
+    const grid = document.getElementById('theme-picker-grid');
+    if (!modal || !grid) return;
+
+    const selected = document.getElementById('category')?.value || '';
+    const cats = (typeof CATEGORIES !== 'undefined' ? CATEGORIES : []).slice();
+    grid.innerHTML = cats.map((c) => {
+      const isCustom = c.name === 'Custom' || c.slug === 'custom';
+      const active = selected === c.name;
+      return `
+        <button type="button" class="theme-pick-card ${active ? 'active' : ''} theme-pick-card--${this.escape(c.slug)}" data-theme-name="${this.escape(c.name)}" data-theme-custom="${isCustom ? '1' : '0'}">
+          <span class="theme-pick-icon" aria-hidden="true">${c.icon || '✨'}</span>
+          <span class="theme-pick-name">${this.escape(isCustom ? 'Custom / Add More' : c.name)}</span>
+          <span class="theme-pick-tagline">${this.escape(c.tagline || '')}</span>
+        </button>`;
+    }).join('');
+
+    grid.querySelectorAll('[data-theme-name]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        this.applyThemeChoice(btn.dataset.themeName, btn.dataset.themeCustom === '1');
+      });
+    });
+
+    modal.classList.remove('hidden');
+    document.body.classList.add('theme-picker-open');
+  },
+
+  closeThemePicker() {
+    document.getElementById('theme-picker-modal')?.classList.add('hidden');
+    document.body.classList.remove('theme-picker-open');
+  },
+
+  applyThemeChoice(name, isCustom = false) {
+    const catEl = document.getElementById('category');
+    if (!catEl) return;
+
+    if (isCustom) {
+      catEl.value = 'Custom';
+    } else {
+      catEl.value = normalizeCategoryName(name) || name;
+    }
+
+    this.syncCustomCategoryUI();
+    this.refreshCategoryToolkit({ scroll: true });
+    this.refreshAI();
+    this.updatePlannerHeader();
+    this.applyCategoryTabFilter();
+    this.syncFestivalPlanningUI?.();
+    catEl.dispatchEvent(new Event('change', { bubbles: true }));
+    this.closeThemePicker();
+
+    const label = isCustom ? 'Custom' : (normalizeCategoryName(name) || name);
+    Eventify.showToast(`Theme set: ${label}`, 'success');
+
+    // Focus title so they can name the event next
+    setTimeout(() => document.getElementById('title')?.focus(), 150);
   },
 
   setVisibility(vis) {

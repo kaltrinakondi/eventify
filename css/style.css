@@ -4115,6 +4115,137 @@ html[data-theme="dark"] .detail-section-card {
   padding: 16px;
 }
 
+.theme-pick-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.theme-pick-row select {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.theme-pick-row .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.theme-picker-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.theme-picker-modal.hidden {
+  display: none !important;
+}
+
+.theme-picker-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.theme-picker-panel {
+  position: relative;
+  width: min(860px, 100%);
+  max-height: min(86vh, 720px);
+  overflow: auto;
+  background: var(--card, #fff);
+  color: var(--text);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+  padding: 20px 20px 18px;
+}
+
+.theme-picker-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.theme-picker-head h2 {
+  margin: 0 0 4px;
+  font-size: 1.35rem;
+}
+
+.theme-picker-close {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.theme-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.theme-pick-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  text-align: left;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg, #fff);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.theme-pick-card:hover {
+  border-color: #0f766e;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 118, 110, 0.12);
+}
+
+.theme-pick-card.active {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.25);
+}
+
+.theme-pick-icon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.theme-pick-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.theme-pick-tagline {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  line-height: 1.35;
+}
+
+body.theme-picker-open {
+  overflow: hidden;
+}
+
+html[data-theme="dark"] .theme-picker-panel {
+  background: #14201d;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+html[data-theme="dark"] .theme-pick-card {
+  background: #0f1916;
+  border-color: rgba(148, 163, 184, 0.18);
+  color: #e8f0ee;
+}
+
 .whos-coming-backdrop {
   position: absolute;
   inset: 0;

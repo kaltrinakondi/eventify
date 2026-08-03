@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Event - Eventify Planner</title>
-  <link rel="stylesheet" href="css/style.css?v=60">
+  <link rel="stylesheet" href="css/style.css?v=61">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <script src="js/theme.js"></script>
   <script src="js/auth-gate.js?v=6"></script>
@@ -69,6 +69,9 @@
             </button>
           </div>
           <div class="planner-action-group planner-save-actions">
+            <button type="button" class="btn btn-planner btn-secondary" id="btn-choose-theme" title="Choose event theme">
+              <span class="btn-ico" aria-hidden="true">🎯</span> Choose theme
+            </button>
             <button type="button" class="btn btn-planner btn-outline" id="btn-save-draft">Save Draft</button>
             <button type="button" class="btn btn-planner btn-primary" id="btn-publish">Publish Event</button>
           </div>
@@ -168,10 +171,14 @@
             </div>
             <div class="planner-grid-2">
               <div class="form-group">
-                <label for="category">Category *</label>
-                <select id="category" name="category" required>
-                  <option value="">Select category</option>
-                </select>
+                <label for="category">Category / Theme *</label>
+                <div class="theme-pick-row">
+                  <select id="category" name="category" required>
+                    <option value="">Select category</option>
+                  </select>
+                  <button type="button" class="btn btn-secondary" id="btn-choose-theme-basics">Choose theme</button>
+                </div>
+                <p class="card-desc" style="margin-top:8px;">Pick the type of event you want to plan — wedding, birthday, festival, and more.</p>
               </div>
               <div class="form-group">
                 <label for="is_free_wrap">Pricing</label>
@@ -1062,6 +1069,20 @@
     </div>
   </main>
 
+  <div id="theme-picker-modal" class="theme-picker-modal hidden" role="dialog" aria-modal="true" aria-labelledby="theme-picker-title">
+    <div class="theme-picker-backdrop" data-close-theme-picker></div>
+    <div class="theme-picker-panel">
+      <div class="theme-picker-head">
+        <div>
+          <h2 id="theme-picker-title">Choose your event theme</h2>
+          <p class="card-desc">What kind of event do you want to create?</p>
+        </div>
+        <button type="button" class="icon-btn theme-picker-close" data-close-theme-picker aria-label="Close">×</button>
+      </div>
+      <div class="theme-picker-grid" id="theme-picker-grid"></div>
+    </div>
+  </div>
+
   <footer class="footer">
     <div class="container">
       <div class="footer-bottom"><p>&copy; 2026 Eventify. All rights reserved.</p></div>
@@ -1076,6 +1097,6 @@
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
   <script src="js/app.js?v=23"></script>
-  <script src="js/event-planner.js?v=45"></script>
+  <script src="js/event-planner.js?v=46"></script>
 </body>
 </html>
