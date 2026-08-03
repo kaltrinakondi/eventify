@@ -30,6 +30,7 @@ const EventPlanner = {
     tickets: [],
     stages: [],
     festivalVendors: [],
+    certFiles: [],
   },
 
   uid() {
@@ -2349,6 +2350,11 @@ const EventPlanner = {
       certificates: {
         title: document.getElementById('cert_title')?.value || '',
         body: document.getElementById('cert_body')?.value || '',
+        recipientName: document.getElementById('cert_recipient_name')?.value || '',
+        bgColor: document.getElementById('cert_bg_color')?.value || '#ffffff',
+        textColor: document.getElementById('cert_text_color')?.value || '#0f172a',
+        fontFamily: document.getElementById('cert_font')?.value || 'Georgia, serif',
+        files: this.state.certFiles || [],
       },
       weather: {
         isOutdoor: document.getElementById('is_outdoor')?.checked || false,
@@ -2647,6 +2653,20 @@ const EventPlanner = {
       document.getElementById('cert_title').value = pd.certificates?.title || '';
       document.getElementById('cert_body').value = pd.certificates?.body || '';
     }
+    if (document.getElementById('cert_recipient_name')) {
+      document.getElementById('cert_recipient_name').value = pd.certificates?.recipientName || '';
+    }
+    if (document.getElementById('cert_bg_color')) {
+      document.getElementById('cert_bg_color').value = pd.certificates?.bgColor || '#ffffff';
+    }
+    if (document.getElementById('cert_text_color')) {
+      document.getElementById('cert_text_color').value = pd.certificates?.textColor || '#0f172a';
+    }
+    if (document.getElementById('cert_font')) {
+      document.getElementById('cert_font').value = pd.certificates?.fontFamily || 'Georgia, serif';
+    }
+    this.state.certFiles = Array.isArray(pd.certificates?.files) ? pd.certificates.files : [];
+    this.renderCertFiles();
     if (document.getElementById('is_outdoor')) {
       document.getElementById('is_outdoor').checked = !!pd.weather?.isOutdoor;
     }
@@ -2793,6 +2813,47 @@ const EventPlanner = {
     });
 
     document.getElementById('preview-certs')?.addEventListener('click', () => this.renderCertificates());
+    ['cert_recipient_name', 'cert_title', 'cert_body', 'cert_bg_color', 'cert_text_color', 'cert_font'].forEach((id) => {
+      document.getElementById(id)?.addEventListener('input', () => this.renderCertificates());
+      document.getElementById(id)?.addEventListener('change', () => this.renderCertificates());
+    });
+
+    const certUpload = document.getElementById('cert-file-upload');
+    certUpload?.addEventListener('click', () => document.getElementById('cert_files')?.click());
+    document.getElementById('cert_files')?.addEventListener('change', async (e) => {
+      const files = [...(e.target.files || [])];
+      if (!files.length) return;
+      const box = document.getElementById('cert-file-upload');
+      if (box) box.querySelector('p').textContent = 'Uploading…';
+      for (const file of files) {
+        try {
+          const meta = await EventifyDB.uploadEventDocument(Eventify.currentUser.id, file);
+          this.state.certFiles.push({
+            id: this.uid(),
+            name: meta.name || file.name,
+            type: meta.type || file.type,
+            size: meta.size || file.size,
+            url: meta.url || '',
+            path: meta.path || '',
+          });
+        } catch (err) {
+          this.state.certFiles.push({
+            id: this.uid(),
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            url: '',
+            error: err.message,
+          });
+          Eventify.showToast(`Certificate "${file.name}": ${err.message}`, 'error');
+        }
+      }
+      if (box) box.querySelector('p').textContent = 'Click to upload certificate PDF or image';
+      e.target.value = '';
+      this.renderCertFiles();
+      Eventify.showToast('Certificate file added', 'success');
+    });
+    this.renderCertFiles();
 
     document.getElementById('fetch-weather')?.addEventListener('click', () => this.updateWeatherAdvice());
 
@@ -3046,22 +3107,66 @@ const EventPlanner = {
   },
 
   renderCertificates() {
-    const title = document.getElementById('cert_title').value || 'Certificate of Completion';
-    const body = document.getElementById('cert_body').value || 'This certifies that [Name] successfully completed the program.';
-    const eventTitle = document.getElementById('title').value || 'Event';
-    const people = this.state.guests.filter(g => g.status === 'confirmed');
-    const list = people.length ? people : [{ name: 'Attendee Name' }];
-    document.getElementById('cert-previews').innerHTML = list.map(g => `
-      <div class="cert-card">
-        <div class="cert-inner">
-          <p class="cert-eyebrow">Eventify</p>
-          <h3>${this.escape(title)}</h3>
-          <p class="cert-name">${this.escape(g.name || 'Attendee')}</p>
-          <p>${this.escape(body.replace('[Name]', g.name || 'Attendee'))}</p>
-          <p class="cert-meta">${this.escape(eventTitle)} · ${document.getElementById('date').value || ''}</p>
+    const wrap = document.getElementById('cert-previews');
+    if (!wrap) return;
+
+    const title = document.getElementById('cert_title')?.value || 'Certificate of Completion';
+    const body = document.getElementById('cert_body')?.value || 'This certifies that [Name] successfully completed the program.';
+    const eventTitle = document.getElementById('title')?.value || 'Event';
+    const recipient = (document.getElementById('cert_recipient_name')?.value || '').trim();
+    const bg = document.getElementById('cert_bg_color')?.value || '#ffffff';
+    const textColor = document.getElementById('cert_text_color')?.value || '#0f172a';
+    const font = document.getElementById('cert_font')?.value || 'Georgia, serif';
+    const dateVal = document.getElementById('date')?.value || '';
+
+    const confirmed = this.state.guests.filter((g) => g.status === 'confirmed' || g.status === 'going');
+    let list = [];
+    if (recipient) list.push({ name: recipient });
+    confirmed.forEach((g) => {
+      if (!list.some((x) => (x.name || '').toLowerCase() === (g.name || '').toLowerCase())) {
+        list.push({ name: g.name || 'Attendee' });
+      }
+    });
+    if (!list.length) list = [{ name: 'Attendee Name' }];
+
+    wrap.innerHTML = list.map((g) => {
+      const person = g.name || 'Attendee';
+      const bodyText = body.replace(/\[Name\]/gi, person);
+      return `
+        <div class="cert-card">
+          <div class="cert-inner" style="background:${this.escape(bg)};color:${this.escape(textColor)};font-family:${this.escape(font)};border-color:${this.escape(textColor)};">
+            <p class="cert-eyebrow" style="color:${this.escape(textColor)};opacity:0.75;">Eventify</p>
+            <h3 style="color:${this.escape(textColor)};font-family:${this.escape(font)};">${this.escape(title)}</h3>
+            <p class="cert-name" style="color:${this.escape(textColor)};font-family:${this.escape(font)};">${this.escape(person)}</p>
+            <p style="color:${this.escape(textColor)};font-family:${this.escape(font)};">${this.escape(bodyText)}</p>
+            <p class="cert-meta" style="color:${this.escape(textColor)};opacity:0.7;">${this.escape(eventTitle)} · ${this.escape(dateVal)}</p>
+          </div>
+        </div>`;
+    }).join('');
+  },
+
+  renderCertFiles() {
+    const list = document.getElementById('cert-file-list');
+    if (!list) return;
+    list.innerHTML = (this.state.certFiles || []).map((f) => `
+      <div class="dynamic-row doc-row" data-id="${f.id}">
+        <div>
+          <strong>${this.escape(f.name || 'Certificate file')}</strong>
+          <div style="font-size:0.8rem;color:var(--text-light)">
+            ${this.escape(f.type || 'file')}${f.size ? ` · ${Math.round(f.size / 1024)} KB` : ''}${f.error ? ` · ${this.escape(f.error)}` : ''}
+          </div>
         </div>
+        ${f.url ? `<a class="btn btn-sm btn-outline" href="${this.escape(f.url)}" target="_blank" rel="noopener">Open</a>` : '<span></span>'}
+        <button type="button" class="icon-btn" data-remove>×</button>
       </div>
-    `).join('');
+    `).join('') || '<p class="empty-state">No uploaded certificate files yet.</p>';
+
+    list.querySelectorAll('.doc-row').forEach((row) => {
+      row.querySelector('[data-remove]')?.addEventListener('click', () => {
+        this.state.certFiles = this.state.certFiles.filter((f) => f.id !== row.dataset.id);
+        this.renderCertFiles();
+      });
+    });
   },
 
   updateWeatherAdvice() {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Create Event - Eventify Planner</title>
-  <link rel="stylesheet" href="css/style.css?v=61">
+  <link rel="stylesheet" href="css/style.css?v=62">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <script src="js/theme.js"></script>
   <script src="js/auth-gate.js?v=6"></script>
@@ -928,7 +928,13 @@
         <section class="planner-panel" id="tab-certs">
           <div class="planner-card">
             <h3>Certificate Generator</h3>
-            <p class="card-desc">Ideal for workshops and conferences. Preview certificates for confirmed guests.</p>
+            <p class="card-desc">Add a name, style the look, preview, or upload your own certificate file.</p>
+
+            <div class="form-group">
+              <label for="cert_recipient_name">Recipient name</label>
+              <input type="text" id="cert_recipient_name" placeholder="e.g. Kaltrina Kondi">
+              <p class="card-desc" style="margin-top:6px;">Used in the preview. Confirmed guests are also listed when you preview.</p>
+            </div>
             <div class="form-group">
               <label for="cert_title">Certificate Title</label>
               <input type="text" id="cert_title" placeholder="Certificate of Completion">
@@ -937,10 +943,43 @@
               <label for="cert_body">Body Text</label>
               <textarea id="cert_body" rows="3" placeholder="This certifies that [Name] successfully completed…"></textarea>
             </div>
+
+            <div class="planner-grid-3">
+              <div class="form-group">
+                <label for="cert_bg_color">Background color</label>
+                <input type="color" id="cert_bg_color" value="#ffffff">
+              </div>
+              <div class="form-group">
+                <label for="cert_text_color">Text color</label>
+                <input type="color" id="cert_text_color" value="#0f172a">
+              </div>
+              <div class="form-group">
+                <label for="cert_font">Text type (font)</label>
+                <select id="cert_font">
+                  <option value="Georgia, serif">Serif (classic)</option>
+                  <option value="'Palatino Linotype', Palatino, serif">Elegant serif</option>
+                  <option value="Arial, Helvetica, sans-serif">Sans-serif</option>
+                  <option value="'Trebuchet MS', sans-serif">Modern sans</option>
+                  <option value="'Courier New', monospace">Typewriter</option>
+                  <option value="'Brush Script MT', cursive">Script</option>
+                </select>
+              </div>
+            </div>
+
             <div class="list-toolbar">
               <button type="button" class="btn btn-sm btn-primary" id="preview-certs">Preview Certificates</button>
             </div>
             <div id="cert-previews"></div>
+          </div>
+
+          <div class="planner-card" style="margin-top:16px;">
+            <h3>Upload your own certificate</h3>
+            <p class="card-desc">Optional — add a PDF or image certificate template from your files.</p>
+            <div class="file-upload" id="cert-file-upload">
+              <input type="file" id="cert_files" accept=".pdf,.png,.jpg,.jpeg,.webp,.gif" multiple>
+              <p>Click to upload certificate PDF or image</p>
+            </div>
+            <div class="dynamic-list" id="cert-file-list" style="margin-top:14px;"></div>
           </div>
         </section>
 
@@ -1097,6 +1136,6 @@
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
   <script src="js/app.js?v=23"></script>
-  <script src="js/event-planner.js?v=46"></script>
+  <script src="js/event-planner.js?v=47"></script>
 </body>
 </html>
