@@ -3124,7 +3124,6 @@ const EventPlanner = {
 
     const title = document.getElementById('cert_title')?.value || 'Certificate of Completion';
     const body = document.getElementById('cert_body')?.value || 'This certifies that [Name] successfully completed the program.';
-    const eventTitle = document.getElementById('title')?.value || 'Event';
     const recipient = (document.getElementById('cert_recipient_name')?.value || '').trim();
     const bg = document.getElementById('cert_bg_color')?.value || '#ffffff';
     const textColor = document.getElementById('cert_text_color')?.value || '#0f172a';
@@ -3132,7 +3131,6 @@ const EventPlanner = {
     const nameSize = document.getElementById('cert_name_size')?.value || '28';
     const bodySize = document.getElementById('cert_body_size')?.value || '18';
     const font = document.getElementById('cert_font')?.value || 'Georgia, serif';
-    const dateVal = document.getElementById('date')?.value || '';
 
     const confirmed = this.state.guests.filter((g) => g.status === 'confirmed' || g.status === 'going');
     let list = [];
@@ -3153,8 +3151,7 @@ const EventPlanner = {
             <p class="cert-eyebrow" style="color:${this.escape(bodyColor)};opacity:0.75;">Eventify</p>
             <h3 style="color:${this.escape(bodyColor)};font-family:${this.escape(font)};font-size:${Number(bodySize) + 4}px;">${this.escape(title)}</h3>
             <p class="cert-name" style="color:${this.escape(textColor)};font-family:${this.escape(font)};font-size:${Number(nameSize)}px;">${this.escape(person)}</p>
-            <p class="cert-body-text" style="color:${this.escape(bodyColor)};font-family:${this.escape(font)};font-size:${Number(bodySize)}px;">${this.escape(bodyText)}</p>
-            <p class="cert-meta" style="color:${this.escape(bodyColor)};opacity:0.7;">${this.escape(eventTitle)} · ${this.escape(dateVal)}</p>
+            <p class="cert-body-text" style="color:${this.escape(bodyColor)};font-family:${this.escape(font)};font-size:${Number(bodySize)}px;margin:0;">${this.escape(bodyText)}</p>
           </div>
         </div>`;
     }).join('');
