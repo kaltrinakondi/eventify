@@ -55,7 +55,7 @@
   <script src="js/api.js?v=22"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js?v=2"></script>
-  <script src="js/app.js?v=22"></script>
+  <script src="js/app.js?v=23"></script>
   <script src="js/event-detail.js?v=2"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -285,7 +285,7 @@
                   hostName: Eventify.currentUser?.name || e.organizer_name || '',
                 });
                 Eventify.openEmailInvite({
-                  subject: `You're invited: ${e.title}`,
+                  subject: `You are invited: ${e.title}`,
                   body: text,
                   pendingWindow: pending,
                 });

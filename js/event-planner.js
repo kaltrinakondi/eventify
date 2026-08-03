@@ -1352,16 +1352,16 @@ const EventPlanner = {
         || document.getElementById('location')?.value?.trim()
         || '';
       const hostName = Eventify.currentUser?.name || '';
-      const customBody = document.getElementById('invite_body')?.value?.trim();
-      const base = Eventify.buildInviteShareText({ title, date, time, location, url, hostName });
+      // Always use English invite copy for share (ignore custom Albanian subject/body)
+      const text = Eventify.buildInviteShareText({ title, date, time, location, url, hostName });
       if (/localhost|127\.0\.0\.1/i.test(url)) {
         Eventify.showToast('Note: localhost links only work on this computer', 'success');
       }
       return {
         title,
         url,
-        text: customBody ? `${customBody}\n\n${base}` : base,
-        subject: document.getElementById('invite_subject')?.value?.trim() || `You're invited: ${title}`,
+        text,
+        subject: `You are invited: ${title}`,
       };
     };
 
@@ -2908,7 +2908,7 @@ const EventPlanner = {
   },
 
   renderInvitePreview() {
-    const subject = document.getElementById('invite_subject').value || 'You\'re invited';
+    const subject = document.getElementById('invite_subject').value || 'You are invited';
     const body = document.getElementById('invite_body').value || '';
     const title = document.getElementById('title').value || 'Event';
     const confirmed = this.state.guests.length ? this.state.guests : [{ name: 'Sample Guest', ticketCode: 'EVT-SAMPLE', email: '' }];

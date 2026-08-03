@@ -556,7 +556,7 @@ const Eventify = {
   buildInviteShareText({ title, date, time, location, url, hostName }) {
     const when = [this.formatDate(date), this.formatTime(time)].filter(Boolean).join(' · ');
     const lines = [
-      `You're invited${title ? `: ${title}` : '!'}`,
+      `You are invited${title ? `: ${title}` : '!'}`,
       hostName ? `Host: ${hostName}` : '',
       when ? `When: ${when}` : '',
       location ? `Where: ${location}` : '',
@@ -583,7 +583,7 @@ const Eventify = {
   },
 
   openEmailInvite({ subject, body, pendingWindow = null } = {}) {
-    const subj = String(subject || "You're invited!").slice(0, 120);
+    const subj = String(subject || 'You are invited!').slice(0, 120);
     const fullBody = String(body || '');
     let shortBody = fullBody;
 
@@ -596,7 +596,7 @@ const Eventify = {
     let mailtoHref = buildMailto(subj, shortBody);
     if (mailtoHref.length > 1800) {
       const urlLine = fullBody.split('\n').find((l) => /^https?:\/\//.test(l.trim())) || '';
-      shortBody = (`You're invited!\n\nRSVP here:\n${urlLine}`).trim() || fullBody.slice(0, 400);
+      shortBody = (`You are invited!\n\nRSVP here:\n${urlLine}`).trim() || fullBody.slice(0, 400);
       mailtoHref = buildMailto(subj, shortBody);
     }
     let gmailHref = buildGmail(subj, shortBody);
