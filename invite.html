@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>You're Invited - Eventify</title>
+  <title>You are invited - Eventify</title>
   <link rel="stylesheet" href="css/style.css?v=57">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <link rel="manifest" href="manifest.webmanifest">
@@ -11,6 +11,7 @@
   <link rel="apple-touch-icon" href="images/app-icon.png">
   <meta name="theme-color" content="#4b245d">
   <script src="js/theme.js"></script>
+  <script src="js/auth-gate.js?v=7"></script>
 </head>
 <body class="invite-page">
   <nav class="navbar">
@@ -50,14 +51,36 @@
   <script src="js/vendor/supabase.js"></script>
   <script src="js/supabase-config.js"></script>
   <script src="js/categories.js?v=10"></script>
-  <script src="js/api.js?v=23"></script>
+  <script src="js/api.js?v=24"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js"></script>
-  <script src="js/app.js?v=21"></script>
+  <script src="js/app.js?v=23"></script>
   <script>
     (function () {
-      const token = new URLSearchParams(window.location.search).get('t') || '';
+      const params = new URLSearchParams(window.location.search);
+      let token = (params.get('t') || params.get('token') || '').trim();
+      // Email clients sometimes append junk after the token
+      token = token.split(/[?\s#]/)[0].replace(/\/+$/, '');
       const voterStorageKey = token ? `eventify_invite_voter_${token}` : '';
+
+      function showContent(html) {
+        const loading = document.getElementById('invite-loading');
+        const content = document.getElementById('invite-content');
+        if (loading) loading.classList.add('hidden');
+        if (content) {
+          content.classList.remove('hidden');
+          content.innerHTML = html;
+        }
+      }
+
+      function showError(title, message) {
+        showContent(`
+          <div class="invite-card-panel empty-state">
+            <h1>${Eventify.escapeHtml(title)}</h1>
+            <p>${Eventify.escapeHtml(message || '')}</p>
+            <p style="margin-top:16px;"><a class="btn btn-primary" href="events.html">Browse events</a></p>
+          </div>`);
+      }
 
       function voterKey() {
         if (!voterStorageKey) return '';
@@ -137,29 +160,21 @@
       }
 
       async function loadInvite() {
-        const loading = document.getElementById('invite-loading');
-        const content = document.getElementById('invite-content');
         if (!token) {
-          loading.classList.add('hidden');
-          content.classList.remove('hidden');
-          content.innerHTML = `
-            <div class="invite-card-panel empty-state">
-              <h1>Invalid invite link</h1>
-              <p>This invitation link is missing or incomplete.</p>
-            </div>`;
+          showError('Invalid invite link', 'This invitation link is missing or incomplete.');
           return;
         }
 
-        const data = await EventifyDB.getInviteEvent(token);
-        loading.classList.add('hidden');
-        content.classList.remove('hidden');
+        let data;
+        try {
+          data = await EventifyDB.getInviteEvent(token);
+        } catch (err) {
+          showError('Could not load invitation', err?.message || 'Please try again.');
+          return;
+        }
 
-        if (!data.success || !data.event) {
-          content.innerHTML = `
-            <div class="invite-card-panel empty-state">
-              <h1>Invite not found</h1>
-              <p>${Eventify.escapeHtml(data.message || 'This link may have expired.')}</p>
-            </div>`;
+        if (!data?.success || !data.event) {
+          showError('Invite not found', data?.message || 'This link may have expired, or the database upgrade is missing.');
           return;
         }
 
@@ -168,10 +183,10 @@
         const showGifts = opts.showGiftRegistry !== false;
         const showWhos = opts.guestsCanSeeWhosComing === true;
         const hostName = e.host_name || e.organizer_name || 'Host';
-        document.title = `${e.title} — You're Invited`;
+        document.title = `${e.title} — You are invited`;
         const icon = typeof getCategoryIcon === 'function' ? getCategoryIcon(e.category) : '🎉';
 
-        content.innerHTML = `
+        showContent(`
           <div class="invite-layout">
             <div class="invite-hero-card">
               <img src="${Eventify.escapeHtml(e.image || 'images/default-event.jpg')}" alt="" onerror="this.src='images/default-event.jpg'">
@@ -208,19 +223,23 @@
             ${renderGifts(data.gifts, showGifts)}
             ${renderWhosComing(data.votes, data.counts, showWhos)}
           </div>
-        `;
+        `);
 
-        const saved = JSON.parse(localStorage.getItem(`eventify_invite_vote_${token}`) || 'null');
-        if (saved?.name) document.getElementById('guest_name').value = saved.name;
-        if (saved?.email) document.getElementById('guest_email').value = saved.email;
-        if (saved?.status) {
-          document.querySelectorAll('.invite-vote').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.status === saved.status);
-          });
-          const fb = document.getElementById('rsvp-feedback');
-          fb.classList.remove('hidden');
-          fb.textContent = `You voted: ${statusLabel(saved.status)}. You can change it anytime.`;
-        }
+        try {
+          const saved = JSON.parse(localStorage.getItem(`eventify_invite_vote_${token}`) || 'null');
+          if (saved?.name) document.getElementById('guest_name').value = saved.name;
+          if (saved?.email) document.getElementById('guest_email').value = saved.email;
+          if (saved?.status) {
+            document.querySelectorAll('.invite-vote').forEach(btn => {
+              btn.classList.toggle('active', btn.dataset.status === saved.status);
+            });
+            const fb = document.getElementById('rsvp-feedback');
+            if (fb) {
+              fb.classList.remove('hidden');
+              fb.textContent = `You voted: ${statusLabel(saved.status)}. You can change it anytime.`;
+            }
+          }
+        } catch (_) { /* ignore corrupt local storage */ }
 
         document.querySelectorAll('.invite-vote').forEach(btn => {
           btn.addEventListener('click', async () => {
@@ -254,8 +273,19 @@
       }
 
       document.addEventListener('DOMContentLoaded', async () => {
-        await Eventify.init();
-        loadInvite();
+        // Never block the invite page forever on auth/session init
+        try {
+          await Promise.race([
+            Eventify.init(),
+            new Promise((resolve) => setTimeout(resolve, 4000)),
+          ]);
+        } catch (_) { /* continue loading invite anyway */ }
+
+        try {
+          await loadInvite();
+        } catch (err) {
+          showError('Could not load invitation', err?.message || 'Please refresh and try again.');
+        }
       });
     })();
   </script>

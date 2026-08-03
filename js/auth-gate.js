@@ -14,6 +14,7 @@
     'about.html': true,
     'contact.html': true,
     'calendar.html': true,
+    'invite.html': true,
   };
 
   function normalizePage(name) {

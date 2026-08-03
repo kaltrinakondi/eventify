@@ -1099,16 +1099,61 @@ const EventifyDB = {
   },
 
   async getInviteEvent(token) {
-    const { data, error } = await sb.rpc('get_invite_event', { p_token: token });
-    if (error) {
+    const clean = String(token || '').trim();
+    if (clean.length < 8) {
+      return { success: false, message: 'Invalid invite link' };
+    }
+
+    const withTimeout = (promise, ms = 12000) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Invite request timed out. Check your connection and try again.')), ms)),
+    ]);
+
+    try {
+      const { data, error } = await withTimeout(sb.rpc('get_invite_event', { p_token: clean }));
+      if (error) {
+        return {
+          success: false,
+          message: /function|schema cache|could not find/i.test(error.message || '')
+            ? 'Invite links need a database upgrade. Ask the organizer to run database/invite-guest-view.sql in Supabase.'
+            : (error.message || 'Could not load invitation'),
+        };
+      }
+      if (data?.success && data?.event) return data;
+      if (data && data.success === false) return data;
+    } catch (err) {
       return {
         success: false,
-        message: /function|schema cache|could not find/i.test(error.message || '')
-          ? 'Invite links need a database upgrade. Ask the organizer to run database/share-invite-rsvp.sql in Supabase.'
-          : error.message,
+        message: err?.message || 'Could not load invitation',
       };
     }
-    return data || { success: false, message: 'Invite not found' };
+
+    // Fallback if RPC is outdated / missing gifts fields — still show the event basics
+    try {
+      const { data: row, error: readErr } = await withTimeout(
+        sb.from('events')
+          .select('id, title, description, category, date, time, location, venue_name, image, visibility, is_free, price, share_token, organizer_id')
+          .eq('share_token', clean)
+          .maybeSingle()
+      );
+      if (!readErr && row) {
+        return {
+          success: true,
+          event: {
+            ...row,
+            host_name: 'Host',
+            organizer_name: 'Host',
+            image: row.image || 'images/default-event.jpg',
+          },
+          invite_options: { showGiftRegistry: true, guestsCanSeeWhosComing: false },
+          gifts: [],
+          votes: [],
+          counts: { going: 0, maybe: 0, not_going: 0, total: 0 },
+        };
+      }
+    } catch (_) { /* ignore fallback errors */ }
+
+    return { success: false, message: 'Invite not found' };
   },
 
   async submitInviteRsvp(token, { name, email = '', status, voterKey }) {

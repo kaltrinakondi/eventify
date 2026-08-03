@@ -3,9 +3,7 @@ Invite guest view (gift registry + optional who's coming)
 
 1. Open Supabase → SQL Editor
 2. Paste and run: database/invite-guest-view.sql
-3. Save/update your event (Invitations tab):
-   - "Show Gift Registry on the invite page" (on by default)
-   - "Show Who's coming to invitees" (off by default — optional)
-4. Share the invite link again
+3. Hard-refresh the invite link (Ctrl+Shift+R)
 
-Gift Registry is available for every event type (Invitations / Gift Registry tabs).
+This also fixes invite pages stuck on "Loading invitation..." when gift
+prices / RSVP data caused the database function to error.
