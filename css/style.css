@@ -2222,6 +2222,11 @@ html[data-theme="dark"] .cal-event-chip {
 .toast.success { background: var(--success); }
 .toast.error { background: var(--danger); }
 
+/* Utility: hide elements (used across invite, planner, modals, etc.) */
+.hidden {
+  display: none !important;
+}
+
 /* Loading & Empty States */
 .loading {
   text-align: center;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>You are invited - Eventify</title>
-  <link rel="stylesheet" href="css/style.css?v=57">
+  <link rel="stylesheet" href="css/style.css?v=58">
   <link rel="stylesheet" href="css/responsive.css?v=9">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="images/app-icon.png">
@@ -66,18 +66,32 @@
       function showContent(html) {
         const loading = document.getElementById('invite-loading');
         const content = document.getElementById('invite-content');
-        if (loading) loading.classList.add('hidden');
+        if (loading) {
+          loading.classList.add('hidden');
+          loading.style.display = 'none';
+          loading.setAttribute('aria-hidden', 'true');
+        }
         if (content) {
           content.classList.remove('hidden');
+          content.style.display = '';
           content.innerHTML = html;
         }
+      }
+
+      function esc(text) {
+        if (typeof Eventify !== 'undefined' && Eventify.escapeHtml) return Eventify.escapeHtml(text ?? '');
+        return String(text ?? '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
       }
 
       function showError(title, message) {
         showContent(`
           <div class="invite-card-panel empty-state">
-            <h1>${Eventify.escapeHtml(title)}</h1>
-            <p>${Eventify.escapeHtml(message || '')}</p>
+            <h1>${esc(title)}</h1>
+            <p>${esc(message || '')}</p>
             <p style="margin-top:16px;"><a class="btn btn-primary" href="events.html">Browse events</a></p>
           </div>`);
       }
