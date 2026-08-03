@@ -55,7 +55,7 @@
   <script src="js/api.js?v=22"></script>
   <script src="js/i18n.js"></script>
   <script src="js/features.js?v=2"></script>
-  <script src="js/app.js?v=21"></script>
+  <script src="js/app.js?v=22"></script>
   <script src="js/event-detail.js?v=2"></script>
   <script>
     document.addEventListener('DOMContentLoaded', async () => {
@@ -269,20 +269,30 @@
                 Eventify.showToast('Private events cannot be shared. Switch to Invite Only or Public.', 'error');
                 return;
               }
-              const url = await ensureInviteUrl();
-              if (!url) return;
-              const text = Eventify.buildInviteShareText({
-                title: e.title,
-                date: e.date,
-                time: e.time,
-                location: e.venue_name || e.location,
-                url,
-                hostName: Eventify.currentUser?.name || e.organizer_name || '',
-              });
-              Eventify.openEmailInvite({
-                subject: `You're invited: ${e.title}`,
-                body: text,
-              });
+              const pending = window.open('about:blank', '_blank');
+              try {
+                const url = await ensureInviteUrl();
+                if (!url) {
+                  pending?.close();
+                  return;
+                }
+                const text = Eventify.buildInviteShareText({
+                  title: e.title,
+                  date: e.date,
+                  time: e.time,
+                  location: e.venue_name || e.location,
+                  url,
+                  hostName: Eventify.currentUser?.name || e.organizer_name || '',
+                });
+                Eventify.openEmailInvite({
+                  subject: `You're invited: ${e.title}`,
+                  body: text,
+                  pendingWindow: pending,
+                });
+              } catch (err) {
+                pending?.close();
+                Eventify.showToast(err?.message || 'Could not open email', 'error');
+              }
             });
 
             const votesBox = document.getElementById('detail-invite-votes');

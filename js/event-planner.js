@@ -1387,11 +1387,21 @@ const EventPlanner = {
       }
     };
     const shareEmail = async () => {
+      // Preserve click gesture so the email tab is not blocked after await
+      const pending = window.open('about:blank', '_blank');
       try {
         const msg = await shareInviteMessage();
-        if (!msg) return;
-        Eventify.openEmailInvite({ subject: msg.subject, body: msg.text });
+        if (!msg) {
+          pending?.close();
+          return;
+        }
+        Eventify.openEmailInvite({
+          subject: msg.subject,
+          body: msg.text,
+          pendingWindow: pending,
+        });
       } catch (err) {
+        pending?.close();
         Eventify.showToast(err?.message || 'Could not open email', 'error');
       }
     };

@@ -582,9 +582,85 @@ const Eventify = {
     }
   },
 
-  openEmailInvite({ subject, body }) {
-    const href = `mailto:?subject=${encodeURIComponent(subject || "You're invited!")}&body=${encodeURIComponent(body || '')}`;
-    window.location.href = href;
+  openEmailInvite({ subject, body, pendingWindow = null } = {}) {
+    const subj = String(subject || "You're invited!").slice(0, 120);
+    const fullBody = String(body || '');
+    let shortBody = fullBody;
+
+    const buildMailto = (s, b) =>
+      `mailto:?subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`;
+    const buildGmail = (s, b) =>
+      `https://mail.google.com/mail/?view=cm&fs=1&tf=1&su=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}`;
+
+    // Keep URLs under common browser limits (~2000 chars)
+    let mailtoHref = buildMailto(subj, shortBody);
+    if (mailtoHref.length > 1800) {
+      const urlLine = fullBody.split('\n').find((l) => /^https?:\/\//.test(l.trim())) || '';
+      shortBody = (`You're invited!\n\nRSVP here:\n${urlLine}`).trim() || fullBody.slice(0, 400);
+      mailtoHref = buildMailto(subj, shortBody);
+    }
+    let gmailHref = buildGmail(subj, shortBody);
+    if (gmailHref.length > 1800) {
+      const urlLine = fullBody.split('\n').find((l) => /^https?:\/\//.test(l.trim())) || '';
+      shortBody = urlLine || shortBody.slice(0, 300);
+      gmailHref = buildGmail(subj, shortBody);
+      mailtoHref = buildMailto(subj, shortBody);
+    }
+
+    // Clipboard backup (full invite text) — helps when no mail app is installed
+    const copyFull = () => {
+      try {
+        if (navigator.clipboard?.writeText) {
+          navigator.clipboard.writeText(fullBody).catch(() => {});
+          return;
+        }
+      } catch (_) { /* ignore */ }
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = fullBody;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        ta.remove();
+      } catch (_) { /* ignore */ }
+    };
+    copyFull();
+
+    // 1) Reliable web compose (works without a desktop mail client)
+    let opened = false;
+    try {
+      if (pendingWindow && !pendingWindow.closed) {
+        pendingWindow.location.href = gmailHref;
+        opened = true;
+      } else {
+        const win = window.open(gmailHref, '_blank', 'noopener,noreferrer');
+        if (win) opened = true;
+      }
+    } catch (_) {
+      try { pendingWindow?.close(); } catch (__) { /* ignore */ }
+    }
+
+    // 2) Also try native mail app (Outlook / Mail) via mailto
+    try {
+      const a = document.createElement('a');
+      a.href = mailtoHref;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      opened = true;
+    } catch (_) { /* ignore */ }
+
+    if (!opened) {
+      // Last resort: navigate this tab to Gmail compose
+      window.location.href = gmailHref;
+    }
+
+    this.showToast('Opening email… Invite text is also copied — paste if needed.', 'success');
+    return true;
   },
 
   exportInviteRsvpsCsv(votes, eventTitle = 'event') {
