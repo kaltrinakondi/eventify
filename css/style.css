@@ -2641,25 +2641,42 @@ html[data-theme="dark"] .detail-section-card {
   flex: 1 1 auto;
   min-width: 140px;
   max-width: min(520px, 70vw);
-  border: none;
-  outline: none;
-  background: transparent;
-  color: inherit;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-color: transparent !important;
+  color: inherit !important;
   font: inherit;
   font-weight: 700;
-  padding: 0;
+  padding: 0 !important;
   margin: 0;
   width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  color-scheme: inherit;
 }
 
 .planner-event-name .planner-event-value-input::placeholder {
-  color: inherit;
+  color: inherit !important;
   opacity: 0.55;
   font-weight: 600;
 }
 
 .planner-event-name .planner-event-value-input:focus {
-  outline: none;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.planner-event-name .planner-event-value-input:-webkit-autofill,
+.planner-event-name .planner-event-value-input:-webkit-autofill:hover,
+.planner-event-name .planner-event-value-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: inherit;
+  -webkit-box-shadow: 0 0 0 1000px transparent inset !important;
+  transition: background-color 99999s ease-in-out 0s;
+  caret-color: inherit;
 }
 
 .planner-host-actions {
@@ -4632,6 +4649,15 @@ html[data-theme="dark"] .discover-search select {
 html[data-theme="dark"] input::placeholder,
 html[data-theme="dark"] textarea::placeholder {
   color: #7f9590 !important;
+}
+
+html[data-theme="dark"] .planner-event-name .planner-event-value-input,
+html[data-theme="dark"] .planner-event-name .planner-event-value-input:focus {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: inherit !important;
 }
 
 html[data-theme="dark"] .form-group label,
