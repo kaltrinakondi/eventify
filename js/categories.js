@@ -166,24 +166,24 @@ const CATEGORY_PLANNER_TABS = {
   custom: ['guests', 'budget', 'schedule', 'photos', 'documents', 'vendors'],
 };
 
-/** Detail-page sections per category (slug). Always includes overview + gallery when useful. */
+/** Detail-page sections shown when viewing an event (scroll-down cards). */
 const CATEGORY_DETAIL_SECTIONS = {
-  weddings: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'tasks', 'notes', 'gallery', 'files'],
-  birthday: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'playlist', 'notes', 'gallery'],
-  conferences: ['overview', 'schedule', 'guests', 'rsvp', 'sponsors', 'team', 'notes', 'gallery', 'files'],
-  business: ['overview', 'schedule', 'guests', 'tasks', 'notes', 'files'],
-  music: ['overview', 'schedule', 'guests', 'tickets', 'team', 'playlist', 'gallery', 'notes'],
-  sports: ['overview', 'schedule', 'guests', 'team', 'notes', 'gallery'],
-  festivals: ['overview', 'schedule', 'guests', 'tickets', 'vendors', 'team', 'playlist', 'gallery', 'notes'],
-  workshops: ['overview', 'schedule', 'guests', 'team', 'notes', 'files'],
-  graduation: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'gallery', 'notes'],
-  baby: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'playlist', 'gallery', 'notes'],
-  charity: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'sponsors', 'team', 'gallery', 'notes'],
-  networking: ['overview', 'schedule', 'guests', 'team', 'notes', 'files'],
-  private: ['overview', 'schedule', 'guests', 'rsvp', 'playlist', 'gallery', 'notes'],
-  food: ['overview', 'schedule', 'guests', 'vendors', 'gallery', 'notes'],
-  art: ['overview', 'schedule', 'guests', 'tickets', 'gallery', 'notes', 'files'],
-  custom: ['overview', 'schedule', 'guests', 'rsvp', 'tasks', 'notes', 'gallery', 'files'],
+  weddings: ['overview', 'guests', 'rsvp', 'gifts'],
+  birthday: ['overview', 'guests', 'rsvp', 'gifts'],
+  conferences: ['overview', 'guests', 'rsvp', 'gifts'],
+  business: ['overview', 'guests', 'rsvp', 'gifts'],
+  music: ['overview', 'guests', 'rsvp', 'gifts'],
+  sports: ['overview', 'guests', 'rsvp', 'gifts'],
+  festivals: ['overview', 'guests', 'rsvp', 'gifts'],
+  workshops: ['overview', 'guests', 'rsvp', 'gifts'],
+  graduation: ['overview', 'guests', 'rsvp', 'gifts'],
+  baby: ['overview', 'guests', 'rsvp', 'gifts'],
+  charity: ['overview', 'guests', 'rsvp', 'gifts'],
+  networking: ['overview', 'guests', 'rsvp', 'gifts'],
+  private: ['overview', 'guests', 'rsvp', 'gifts'],
+  food: ['overview', 'guests', 'rsvp', 'gifts'],
+  art: ['overview', 'guests', 'rsvp', 'gifts'],
+  custom: ['overview', 'guests', 'rsvp', 'gifts'],
 };
 
 function getDetailSectionsForCategory(categoryName) {
