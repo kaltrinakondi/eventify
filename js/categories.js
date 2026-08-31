@@ -168,22 +168,22 @@ const CATEGORY_PLANNER_TABS = {
 
 /** Detail-page sections per category (slug). Always includes overview + gallery when useful. */
 const CATEGORY_DETAIL_SECTIONS = {
-  weddings: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'budget', 'tasks', 'notes', 'gallery', 'files'],
-  birthday: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'budget', 'playlist', 'notes', 'gallery'],
-  conferences: ['overview', 'schedule', 'guests', 'rsvp', 'sponsors', 'budget', 'team', 'notes', 'gallery', 'files'],
+  weddings: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'tasks', 'notes', 'gallery', 'files'],
+  birthday: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'playlist', 'notes', 'gallery'],
+  conferences: ['overview', 'schedule', 'guests', 'rsvp', 'sponsors', 'team', 'notes', 'gallery', 'files'],
   business: ['overview', 'schedule', 'guests', 'tasks', 'notes', 'files'],
-  music: ['overview', 'schedule', 'guests', 'tickets', 'budget', 'team', 'playlist', 'gallery', 'notes'],
-  sports: ['overview', 'schedule', 'guests', 'team', 'budget', 'notes', 'gallery'],
-  festivals: ['overview', 'schedule', 'guests', 'tickets', 'budget', 'vendors', 'team', 'playlist', 'gallery', 'notes'],
-  workshops: ['overview', 'schedule', 'guests', 'team', 'budget', 'notes', 'files'],
+  music: ['overview', 'schedule', 'guests', 'tickets', 'team', 'playlist', 'gallery', 'notes'],
+  sports: ['overview', 'schedule', 'guests', 'team', 'notes', 'gallery'],
+  festivals: ['overview', 'schedule', 'guests', 'tickets', 'vendors', 'team', 'playlist', 'gallery', 'notes'],
+  workshops: ['overview', 'schedule', 'guests', 'team', 'notes', 'files'],
   graduation: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'gallery', 'notes'],
   baby: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'playlist', 'gallery', 'notes'],
-  charity: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'budget', 'sponsors', 'team', 'gallery', 'notes'],
+  charity: ['overview', 'schedule', 'guests', 'rsvp', 'gifts', 'sponsors', 'team', 'gallery', 'notes'],
   networking: ['overview', 'schedule', 'guests', 'team', 'notes', 'files'],
-  private: ['overview', 'schedule', 'guests', 'rsvp', 'playlist', 'budget', 'gallery', 'notes'],
-  food: ['overview', 'schedule', 'guests', 'vendors', 'budget', 'gallery', 'notes'],
-  art: ['overview', 'schedule', 'guests', 'tickets', 'budget', 'gallery', 'notes', 'files'],
-  custom: ['overview', 'schedule', 'guests', 'rsvp', 'budget', 'tasks', 'notes', 'gallery', 'files'],
+  private: ['overview', 'schedule', 'guests', 'rsvp', 'playlist', 'gallery', 'notes'],
+  food: ['overview', 'schedule', 'guests', 'vendors', 'gallery', 'notes'],
+  art: ['overview', 'schedule', 'guests', 'tickets', 'gallery', 'notes', 'files'],
+  custom: ['overview', 'schedule', 'guests', 'rsvp', 'tasks', 'notes', 'gallery', 'files'],
 };
 
 function getDetailSectionsForCategory(categoryName) {

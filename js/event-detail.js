@@ -42,7 +42,6 @@ const EventDetailSections = {
     const team = pd.team || [];
     const playlist = pd.playlist || [];
     const checklist = pd.checklist || [];
-    const budget = pd.budget || {};
     const docs = pd.documents || [];
     const festival = pd.festival || {};
     const notes = [pd.planningNotes, pd.categoryNotes, pd.importantReminders, festival.artistLineup]
@@ -131,16 +130,6 @@ const EventDetailSections = {
               </li>`).join('')}</ul>`
           : (isHost ? '<p class="muted">No items yet. Add gifts/donations in the planner.</p>' : ''),
         { force: isHost || gifts.length > 0, id: 'section-gifts' }
-      );
-    }
-
-    if (this.wants(sections, 'budget') || (isCharity && budget.total)) {
-      html += this.section(isCharity ? 'Fundraising goal' : 'Budget',
-        `<p><strong>Goal / total:</strong> $${Number(budget.total || 0).toLocaleString()}</p>
-         ${(budget.lines || []).length ? `<ul class="detail-list">${budget.lines.slice(0, 12).map((l) => `
-           <li>${this.esc(l.category || l.name || 'Line')}: $${Number(l.planned || l.estimated || 0).toLocaleString()}</li>
-         `).join('')}</ul>` : (isHost ? '<p class="muted">Add budget lines in the planner.</p>' : '')}`,
-        { force: isHost || !!budget.total || (budget.lines || []).length > 0, id: 'section-budget' }
       );
     }
 
