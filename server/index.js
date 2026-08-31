@@ -11,7 +11,8 @@ const contactRoutes = require('./routes/contact');
 const adminRoutes = require('./routes/admin');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number(process.env.PORT) || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 const rootDir = path.join(__dirname, '..');
 
 app.use(express.json());
@@ -43,6 +44,6 @@ app.get('*', (req, res, next) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Eventify running at http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(`Eventify running at http://${HOST}:${PORT}`);
 });

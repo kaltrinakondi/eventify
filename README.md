@@ -29,11 +29,13 @@ const SUPABASE_ANON_KEY = 'eyJ...';
 ```
 
 ### 4. Run locally
-```powershell
-cd C:\Users\DELL\Projects\eventify
-py -m http.server 5500
+```bash
+npm install
+npm start
 ```
-Open http://localhost:5500
+Open http://localhost:3000
+
+The server listens on `0.0.0.0:3000` by default (override with `PORT` / `HOST`).
 
 ## Pages
 
